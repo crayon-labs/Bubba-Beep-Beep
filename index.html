@@ -40,6 +40,9 @@
 html,body{height:100%}
 /* No double-tap zoom (taps on the timer controls are often quick doubles); pinch-zoom still works. */
 html{touch-action:manipulation}
+/* The page itself never scrolls (only inner panes do), so a pull-down can't trigger pull-to-refresh or rubber-banding. */
+html,body{overflow:hidden;overscroll-behavior:none}
+.scroll,.sheet .panel{overscroll-behavior-y:contain}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
@@ -172,11 +175,37 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .tut{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 14px 8px 8px;flex:none}
 .tut[hidden]{display:none}
 .tut svg{width:140px;height:116px;flex:none}
-.tut .lim{stroke:var(--fg);stroke-width:4.5;stroke-linecap:round}
-.tut .far{opacity:.35}
-.tut .head{fill:var(--fg)}
-.tut .db{fill:var(--phase)}
-.tut .gnd{stroke:var(--line);stroke-width:2;stroke-linecap:round}
+.fig .lim{stroke:var(--fg);stroke-width:4.5;stroke-linecap:round}
+.fig .far{opacity:.35}
+.fig .head{fill:var(--fg)}
+.fig .db{fill:var(--phase,var(--accent))}
+.fig .gnd{stroke:var(--line);stroke-width:2;stroke-linecap:round}
+/* Exercise library: name dropdown, builder thumbnails, browse sheet */
+.ex-head{position:relative}
+.ex-fig{flex:none;width:46px;height:40px;display:grid;place-items:center;background:var(--surface-2);border-radius:10px}
+.ex-fig svg{width:40px;height:34px}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:15;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:300px;overflow-y:auto;overscroll-behavior:contain;padding:4px}
+.sug{display:flex;align-items:center;gap:10px;width:100%;padding:6px 8px;border-radius:8px;text-align:left;font-size:15px}
+.sug:hover,.sug:focus-visible{background:var(--surface-2)}
+.sug svg{width:40px;height:34px;flex:none}
+.sug small{margin-left:auto;color:var(--muted);font-size:12px;flex:none}
+.sug-h{padding:10px 8px 4px}
+.add-row{display:flex;border-top:1px dashed var(--line)}
+.add-row .add-ex{flex:1;border-top:0}
+.add-row .add-ex+.add-ex{border-left:1px dashed var(--line)}
+.panel.lib{max-height:88vh;display:flex;flex-direction:column;gap:10px}
+.lib-head{display:flex;align-items:center;justify-content:space-between}
+.lib-parts{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none;padding-bottom:2px}
+.lib-parts::-webkit-scrollbar{display:none}
+.lib-parts .chip{flex:none}
+.lib-parts .chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.lib-list{overflow-y:auto;min-height:0;flex:1;overscroll-behavior:contain}
+.lib-list .sug-h{padding:12px 0 2px}
+.lib-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.lib-row svg{width:64px;height:54px;flex:none;background:var(--surface-2);border-radius:10px;padding:4px}
+.lib-n{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lib-n b{font-weight:600}
+.lib-n small{color:var(--muted);font-size:12.5px;line-height:1.35}
 .tut-t{min-width:0;display:flex;flex-direction:column;gap:2px}
 .tut-t b{font-weight:600;font-size:16px;line-height:1.25;overflow-wrap:break-word}
 .tut-t small{color:var(--muted);font-size:13px;line-height:1.35}
@@ -203,7 +232,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .sum-list .row .v{color:var(--muted)}
 
 /* Settings sheet */
-.sheet{position:fixed;inset:0;background:rgba(10,14,10,.35);display:grid;place-items:end center;z-index:20}
+.sheet{position:fixed;inset:0;background:rgba(10,14,10,.35);display:grid;grid-template-columns:minmax(0,1fr);place-items:end center;z-index:20}
 .sheet .panel{width:100%;max-width:520px;background:var(--surface);border-radius:20px 20px 0 0;padding-block:12px calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px}
 .sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto}
 .toggle{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .15s}
@@ -340,9 +369,9 @@ let beepBuf=null;
 function loadBeep(){const c=ac();if(!c||beepBuf)return;try{const bin=atob(BEEP_WAV),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);c.decodeAudioData(u.buffer,b=>{beepBuf=b},()=>{})}catch(e){}}
 function beepAt(sec,when){const R=S.run,c=ac();if(!settings.sound)return;
   // If audio is blocked (no context, or iOS hasn't resumed it), say the beep instead so the countdown is never silent.
-  if(!c||c.state!=='running'){setTimeout(()=>say('beep',true,{pitch:sec===1?1.9:1.6,rate:1.2}),Math.max(0,when*1000-150));return}
-  if(!beepBuf){chirp(sec===1?1568:1175,.09,when);return}
-  const src=c.createBufferSource(),g=c.createGain();src.buffer=beepBuf;src.playbackRate.value=sec===1?1.22:1.08;g.gain.value=.9;src.connect(g).connect(c.destination);src.start(c.currentTime+when);
+  if(!c||c.state!=='running'){setTimeout(()=>say('beep',true,{pitch:1.6,rate:1.2}),Math.max(0,when*1000-150));return}
+  if(!beepBuf){chirp(1175,.09,when);return}
+  const src=c.createBufferSource(),g=c.createGain();src.buffer=beepBuf;src.playbackRate.value=1.08;g.gain.value=.9;src.connect(g).connect(c.destination);src.start(c.currentTime+when);
   if(R){R.pend=(R.pend||[]).filter(x=>x.t>c.currentTime);R.pend.push({src,at:c.currentTime+when,t:c.currentTime+when+.4})}}
 function cancelBeeps(){const R=S.run;if(!R||!R.pend)return;R.pend.forEach(x=>{try{x.src.stop()}catch(e){}});R.pend=[]}
 const beepWork=()=>{tone(1047,.16);tone(1319,.22,.17)};
@@ -449,7 +478,7 @@ function renderBuilder(){
     <div class="section"><div class="section-head"><h2>Exercises</h2><span class="note">Each set runs for its time, hands-off</span></div>
       <div class="card">${w.exercises.map((e,i)=>`
         <div class="ex" data-ex="${i}">
-          <div class="ex-head"><span class="idx num">${i+1}</span><input class="text-field" id="f-ex-${e.id}" data-text="exercises.${i}.name" placeholder="Exercise name" value="${esc(e.name)}"></div>
+          <div class="ex-head"><span class="idx num">${i+1}</span><input class="text-field" id="f-ex-${e.id}" data-text="exercises.${i}.name" placeholder="Exercise name (tap to browse)" value="${esc(e.name)}" autocomplete="off"><span class="ex-fig">${figSVG(e.name)}</span></div>
           <div class="ex-grid">
             <div class="mini"><span class="eyebrow">Time / set</span>${miniStep(`exercises.${i}.dur`,e.dur,{min:5,step:5,fmtv:fmt})}</div>
             <div class="mini"><span class="eyebrow">Sets</span>${miniStep(`exercises.${i}.sets`,e.sets,{min:1,step:1})}</div>
@@ -458,7 +487,7 @@ function renderBuilder(){
           <div class="ex-foot"><input class="text-field" id="f-reps-${e.id}" data-text="exercises.${i}.reps" placeholder="Target reps, e.g. 12" value="${esc(e.reps)}" style="flex:1;min-width:0;padding:8px 10px">
             <span class="tools"><button class="icon-btn" data-exact="up" data-i="${i}" aria-label="Move up" ${i===0?'disabled':''}>${I.up}</button><button class="icon-btn" data-exact="down" data-i="${i}" aria-label="Move down" ${i===w.exercises.length-1?'disabled':''}>${I.down}</button><button class="icon-btn" data-exact="dup" data-i="${i}" aria-label="Duplicate">${I.copy}</button><button class="icon-btn" data-exact="del" data-i="${i}" aria-label="Remove" ${w.exercises.length===1?'disabled':''}>${I.trash}</button></span></div>
         </div>`).join('')}
-        <button class="add-ex" data-act="addEx">+ Add exercise</button>
+        <div class="add-row"><button class="add-ex" data-act="addEx">+ Add exercise</button><button class="add-ex" data-act="openLib">Browse library</button></div>
       </div>
     </div>
     <div class="section"><div class="section-head"><h2>Structure</h2></div>
@@ -556,20 +585,40 @@ const MOVES={
   sidelying:{a:'38 80 48 84 56 82 66 86 74 86 92 86 110 86',b:'38 80 48 84 56 82 66 86 74 86 92 86 110 86 56 82 66 86 91 78 108 70',cue:'Hips stacked, lift from the side of your hip'},
   climber:{a:'108 63 100 66 100 78 100 90 77 76 92 80 86 90 100 78 100 90 60 83 43 90',b:'108 63 100 66 100 78 100 90 77 76 60 83 43 90 100 78 100 90 92 80 86 90',t:900,cue:'Shoulders over wrists, drive your knees in'},
   swing:{a:'102 47 94 50 88 63 80 72 72 58 78 75 80 92',b:'80 25 80 34 93 36 106 38 80 58 80 75 80 92',t:1600,db:1,cue:'Snap your hips forward, let the arms float'},
+  lateralraise:{a:'80 25 80 34 72 47 71 60 80 58 76 75 75 92 88 47 89 60 84 75 85 92',b:'80 25 80 34 60 37 47 38 80 58 76 75 75 92 100 37 113 38 84 75 85 92',front:1,db:1,cue:'Soft elbows, lift to shoulder height, lower slowly'},
+  frontraise:{a:'80 25 80 34 82 47 83 60 80 58 80 75 80 92',b:'80 25 80 34 93 35 106 36 80 58 80 75 80 92',db:1,cue:'Arms long, lift to shoulder height, no swinging'},
+  shrug:{a:'80 25 80 34 83 47 84 60 80 58 80 75 80 92',b:'80 21 80 30 83 43 84 56 80 58 80 75 80 92',t:1600,db:1,cue:'Lift your shoulders to your ears, pause, lower slowly'},
+  calfraise:{a:'80 25 80 34 82 47 83 60 80 58 80 75 80 92',b:'80 20 80 29 82 42 83 55 80 53 80 70 82 92',t:1600,db:1,cue:'Rise high onto the balls of your feet, lower with control'},
+  crunch:{a:'40 86 50 86 46 78 41 82 74 86 86 72 96 90',b:'49 74 55 80 52 71 47 75 74 86 86 72 96 90',t:1800,cue:'Ribs to hips, chin off your chest, exhale as you curl'},
+  legraise:{a:'40 86 50 86 60 90 70 90 74 86 92 85 110 84',b:'40 86 50 86 60 90 70 90 74 86 76 68 78 50',t:3000,cue:'Low back pressed down, lower your legs slowly'},
+  dip:{a:'72 30 72 39 66 51 62 62 74 62 92 60 98 92',b:'72 42 72 51 59 54 62 62 74 74 92 66 98 92',t:2200,cue:'Elbows bend straight back, shoulders away from your ears'},
+  triext:{a:'80 25 80 34 88 22 90 9 80 58 80 75 80 92',b:'80 25 80 34 88 22 79 29 80 58 80 75 80 92',db:1,cue:'Elbows by your ears, only the forearms move'},
+  donkey:{a:'108 66 100 70 100 80 100 92 74 70 74 88 57 90',b:'108 66 100 70 100 80 100 92 74 70 56 70 56 52 100 80 100 92 74 88 57 90',t:2000,cue:'Core braced, press your heel up to the ceiling'},
   march:{a:'80 25 80 34 76 46 74 58 80 58 96 62 94 79 84 46 92 38 80 75 80 92',b:'80 25 80 34 84 46 92 38 80 58 80 75 80 92 76 46 74 58 96 62 94 79',t:1000,cue:'Stay light and keep breathing'}
 };
 // First match wins, so specific names come before general ones.
-const MOVE_RULES=[[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank']];
+const MOVE_RULES=[[/overhead (tricep )?extension|tricep extension|skull/,'triext'],[/\bdips?\b/,'dip'],[/lateral raise|y raise/,'lateralraise'],[/front raise/,'frontraise'],[/shrug/,'shrug'],[/calf/,'calfraise'],[/donkey|fire hydrant/,'donkey'],[/leg raise|leg lower/,'legraise'],[/incline.*press|close.?grip/,'floorpress'],[/step.?up/,'split'],[/frog/,'bridge'],[/wall sit/,'squat'],[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank'],[/crunch/,'crunch']];
 // Plain numbers read as "12 reps"; descriptive labels like "left, then right" show as written.
 const repsTxt=r=>/^\d+$/.test(r)?`${r} reps`:r;
 function moveFor(name){const n=(name||'').toLowerCase();const r=MOVE_RULES.find(([re])=>re.test(n));return r?r[1]:'march'}
 const poseOf=str=>{const v=str.split(' ').map(Number);if(v.length===14)v.push(v[4],v[5],v[6],v[7],v[10],v[11],v[12],v[13]);return v};
 for(const k in MOVES){MOVES[k].A=poseOf(MOVES[k].a);MOVES[k].B=poseOf(MOVES[k].b)}
-function tutSvg(){const db='<rect class="db" width="9" height="5" rx="1.5"/>';return `<svg viewBox="14 2 116 96" aria-hidden="true"><line class="gnd" x1="14" y1="94" x2="130" y2="94"/><g class="far">${'<line class="lim"/>'.repeat(4)}${db}</g><g>${'<line class="lim"/>'.repeat(5)}<circle class="head" r="6"/>${db}</g></svg>`}
-function tutPose(svg,m,v,showDb){
+function tutSvg(){const db='<rect class="db" width="9" height="5" rx="1.5"/>';return `<svg class="fig" viewBox="14 2 116 96" aria-hidden="true"><line class="gnd" x1="14" y1="94" x2="130" y2="94"/><g class="far">${'<line class="lim"/>'.repeat(4)}${db}</g><g>${'<line class="lim"/>'.repeat(5)}<circle class="head" r="6"/>${db}</g></svg>`}
+function figSegs(m,v){
   const P=i=>[v[i*2],v[i*2+1]],[h,sh,e,w,hp,k,f,e2,w2,k2,f2]=[0,1,2,3,4,5,6,7,8,9,10].map(P);
   const off=(pt,dx)=>m.front?[pt[0]+dx,pt[1]]:pt;
-  const near=[[off(sh,-7),e],[e,w],[sh,hp],[off(hp,-4),k],[k,f]],far=[[off(sh,7),e2],[e2,w2],[off(hp,4),k2],[k2,f2]];
+  return {h,w,w2,near:[[off(sh,-7),e],[e,w],[sh,hp],[off(hp,-4),k],[k,f]],far:[[off(sh,7),e2],[e2,w2],[off(hp,4),k2],[k2,f2]]};
+}
+// Static figure (end pose) for thumbnails, cropped to the figure so it reads at small sizes.
+function figSVG(name){
+  const m=MOVES[moveFor(name)],g=figSegs(m,m.B),xs=[],ys=[94];
+  [...g.near,...g.far].forEach(([a,b])=>{xs.push(a[0],b[0]);ys.push(a[1],b[1])});xs.push(g.h[0]);ys.push(g.h[1]-6);
+  const x0=Math.min(...xs)-8,x1=Math.max(...xs)+8,y0=Math.min(...ys)-6,y1=98;
+  const L=([a,b])=>`<line class="lim" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`,D=pt=>m.db?`<rect class="db" width="9" height="5" rx="1.5" x="${pt[0]-4.5}" y="${pt[1]-2.5}"/>`:'';
+  return `<svg class="fig" viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" aria-hidden="true"><line class="gnd" x1="${x0}" y1="94" x2="${x1}" y2="94"/><g class="far">${g.far.map(L).join('')}${D(g.w2)}</g><g>${g.near.map(L).join('')}<circle class="head" r="6" cx="${g.h[0]}" cy="${g.h[1]}"/>${D(g.w)}</g></svg>`;
+}
+function tutPose(svg,m,v,showDb){
+  const {h,w,w2,near,far}=figSegs(m,v);
   const set=(el,[a,b])=>{el.setAttribute('x1',a[0]);el.setAttribute('y1',a[1]);el.setAttribute('x2',b[0]);el.setAttribute('y2',b[1])};
   const [gFar,gNear]=svg.querySelectorAll('g');
   gFar.querySelectorAll('line').forEach((el,i)=>set(el,far[i]));gNear.querySelectorAll('line').forEach((el,i)=>set(el,near[i]));
@@ -587,6 +636,46 @@ function tutStart(name){
     const ph=((now-t0)%T)/T,x=still?(ph<.5?0:1):(1-Math.cos(ph*2*Math.PI))/2;
     tutPose(svg,m,m.A.map((a,i)=>a+(m.B[i]-a)*x),showDb);tutRAF=requestAnimationFrame(frame)};
   tutRAF=requestAnimationFrame(frame);
+}
+// ---------- exercise library ----------
+// Ten common exercises per body part; each maps to a move above for its picture and cue.
+const LIB={
+  Chest:['Push-up','Wide push-up','Incline push-up','Decline push-up','Dumbbell bench press','Incline dumbbell press','Dumbbell floor press','Dumbbell fly','Squeeze press','Dumbbell pullover'],
+  Back:['Bent-over row','Single-arm row','Renegade row','Reverse fly','Superman','Pilates swimming','Romanian deadlift','Dumbbell deadlift','Dumbbell shrug','Good morning'],
+  Shoulders:['Overhead press','Arnold press','Lateral raise','Front raise','Rear delt fly','Pike push-up','Push press','Y raise','Plank shoulder tap','Half-kneeling press'],
+  Arms:['Bicep curl','Hammer curl','Concentration curl','Zottman curl','Tricep kickback','Overhead tricep extension','Skull crusher','Tricep dip','Diamond push-up','Close-grip floor press'],
+  Core:['Plank','Side plank','Dead bug','The Hundred','Teaser','Crunch','Bicycle crunch','Leg raise','Mountain climbers','Single-leg stretch'],
+  Legs:['Goblet squat','Sumo squat','Jump squat','Bulgarian split squat','Reverse lunge','Walking lunge','Step-up','Romanian deadlift','Calf raise','Wall sit'],
+  Glutes:['Glute bridge','Single-leg glute bridge','Hip thrust','Donkey kick','Fire hydrant','Clamshell','Side-lying leg lift','Curtsy lunge','Sumo deadlift','Kettlebell swing']
+};
+const LIB_ALL=Object.entries(LIB).flatMap(([part,names])=>names.map(name=>({name,part})));
+function libMatches(q){q=(q||'').trim().toLowerCase();return q?LIB_ALL.filter(x=>x.name.toLowerCase().includes(q)||x.part.toLowerCase().startsWith(q)):LIB_ALL}
+function libRows(list,grouped,row){let last='';return list.map(x=>{const h=grouped&&x.part!==last?`<div class="sug-h eyebrow">${x.part}</div>`:'';last=x.part;return h+row(x)}).join('')}
+// Exercise-name dropdown: shows the library while the name field is focused and filters as you type.
+function showSuggest(inp){
+  closeSuggest();const list=libMatches(inp.value);if(!list.length)return;
+  const box=document.createElement('div');box.className='suggest';box.setAttribute('role','listbox');
+  box.innerHTML=libRows(list,!inp.value.trim(),x=>`<button type="button" class="sug" role="option" data-pick="${esc(x.name)}">${figSVG(x.name)}<span>${esc(x.name)}</span><small>${x.part}</small></button>`);
+  inp.closest('.ex-head').appendChild(box);
+}
+function closeSuggest(){document.querySelectorAll('.suggest').forEach(b=>b.remove())}
+function libListHTML(){
+  const {part,q}=S.lib,list=libMatches(q).filter(x=>part==='All'||x.part===part);
+  if(!list.length)return '<div class="empty">No matches. You can still type any name in the builder.</div>';
+  return libRows(list,part==='All',x=>`<div class="lib-row">${figSVG(x.name)}<span class="lib-n"><b>${esc(x.name)}</b><small>${esc(MOVES[moveFor(x.name)].cue)}</small></span><button type="button" class="chip" data-libadd="${esc(x.name)}">Add</button></div>`);
+}
+function renderLib(){
+  if(!S.lib){layer.innerHTML='';return}
+  layer.innerHTML=`<div class="sheet" data-act="closeLib"><div class="panel lib" data-stop>
+    <div class="grab"></div><div class="lib-head"><h2 style="font-size:17px;font-weight:600">Exercise library</h2><button type="button" class="text-btn" data-act="closeLib">Done</button></div>
+    <input class="text-field" data-libq placeholder="Search exercises" value="${esc(S.lib.q)}" autocomplete="off">
+    <div class="lib-parts">${['All',...Object.keys(LIB)].map(p=>`<button type="button" class="chip" data-libpart="${p}" aria-pressed="${p===S.lib.part}">${p}</button>`).join('')}</div>
+    <div class="lib-list" id="lib-list">${libListHTML()}</div></div></div>`;
+}
+function addFromLib(name){
+  const ex=S.draft.exercises,item={id:uid(),name,dur:40,sets:3,reps:'',restBetweenSets:20};
+  if(ex.length===1&&!ex[0].name.trim())ex[0]=item;else ex.push(item);
+  render();toast(`Added ${name}`);
 }
 function tutStop(){cancelAnimationFrame(tutRAF);tutRAF=0;const box=document.getElementById('tut');if(box)box.dataset.move=''}
 function renderRun(){
@@ -648,7 +737,7 @@ function renderSummary(){
 function hearts(){const c=document.getElementById('hearts');if(!c||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const x=c.getContext('2d');const dpr=devicePixelRatio||1;c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.scale(dpr,dpr);const cols=['#F28CB1','#F6C453','#1E7A5C','#6E9BEE','#E26A58'];const P=Array.from({length:60},()=>({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.6,vy:1.5+Math.random()*2.5,vx:(Math.random()-.5)*1.2,s:8+Math.random()*10,r:Math.random()*6.28,c:pick(cols),h:Math.random()<.5}));let t=0;function heart(px,py,s,r){x.save();x.translate(px,py);x.rotate(r);x.scale(s/16,s/16);x.beginPath();x.moveTo(0,5);x.bezierCurveTo(-8,-3,-8,-10,0,-6);x.bezierCurveTo(8,-10,8,-3,0,5);x.fill();x.restore()}function f(){x.clearRect(0,0,innerWidth,innerHeight);let alive=false;P.forEach(p=>{p.y+=p.vy;p.x+=p.vx+Math.sin((p.y+p.r)/30)*.6;p.r+=.03;if(p.y<innerHeight+30)alive=true;x.fillStyle=p.c;if(p.h)heart(p.x,p.y,p.s,p.r);else{x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()}});t++;if(alive&&t<600)requestAnimationFrame(f);else c.remove()}requestAnimationFrame(f)}
 
 function renderSheet(){
-  if(!S.sheet){layer.innerHTML='';return}
+  if(!S.sheet){if(!S.lib)layer.innerHTML='';return}
   layer.innerHTML=`<div class="sheet" data-act="closeSheet"><div class="panel" data-stop>
     <div class="grab"></div><h2 style="font-size:17px;font-weight:600">Cues</h2>
     <div class="card rows">
@@ -701,6 +790,7 @@ app.addEventListener('click',e=>{
     case 'new':S.draftMode='builder';S.draft=newDraft('builder');S.editingId=null;S.screen='builder';render();break;
     case 'toBuilder':S.draftMode='builder';S.draft.name=S.draft.name==='Quick timer'?'':S.draft.name;S.screen='builder';render();break;
     case 'open':{const p=presets.find(x=>x.id===b.dataset.id);S.draft=JSON.parse(JSON.stringify(p));S.editingId=p.id;S.draftMode='builder';S.screen='builder';render();break}
+    case 'openLib':S.lib={part:'All',q:''};renderLib();break;
     case 'addEx':S.draft.exercises.push({id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15});render();setTimeout(()=>{const inp=app.querySelector(`.ex:last-of-type input[data-text]`);inp&&inp.focus()},0);break;
     case 'savePreset':savePreset();break;
     case 'deletePreset':presets=presets.filter(p=>p.id!==S.editingId);store.set('cadence.presets',presets);S.screen='home';S.editingId=null;toast('Deleted');render();break;
@@ -713,15 +803,29 @@ app.addEventListener('click',e=>{
     case 'clearhist':history=[];store.set('cadence.history',history);render();break;
   }
 });
+const isExName=el=>el&&el.matches&&el.matches('.ex-head input[data-text]');
+app.addEventListener('focusin',e=>{if(isExName(e.target))showSuggest(e.target)});
+app.addEventListener('focusout',e=>{if(isExName(e.target))setTimeout(()=>{if(!isExName(document.activeElement))closeSuggest()},250)});
+app.addEventListener('input',e=>{const inp=e.target;if(!isExName(inp))return;showSuggest(inp);inp.closest('.ex-head').querySelector('.ex-fig').innerHTML=figSVG(inp.value)});
+app.addEventListener('click',e=>{if(isExName(e.target)&&!e.target.closest('.ex-head').querySelector('.suggest')){showSuggest(e.target);return}const pk=e.target.closest('[data-pick]');if(!pk)return;
+  const inp=pk.closest('.ex-head').querySelector('input');inp.value=pk.dataset.pick;setPath(S.draft,inp.dataset.text,inp.value);
+  inp.closest('.ex-head').querySelector('.ex-fig').innerHTML=figSVG(inp.value);closeSuggest();inp.blur();
+  const tl=app.querySelector('.timeline');if(tl)tl.outerHTML=timelineHTML(S.draft)});
 app.addEventListener('change',e=>{
   const inp=e.target;
   if(inp.matches('[data-text]')){setPath(S.draft,inp.dataset.text,inp.value);const tl=app.querySelector('.timeline');if(tl)tl.outerHTML=timelineHTML(S.draft);return}
   const st=inp.closest('[data-stepper]');
   if(st&&inp.matches('.val')){const v=parseTime(inp.value);if(v===null){render();return}setPath(S.draft,st.dataset.stepper,Math.max(+st.dataset.min,v));render()}
 });
-app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('input'))e.target.blur()});
+app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==='Enter'&&e.target.matches('input'))e.target.blur()});
 layer.addEventListener('change',e=>{if(e.target.matches('[data-nick]')){settings.nick=e.target.value.trim()||'Bubba';store.set('cadence.settings',settings);return}if(e.target.matches('[data-voice]')){settings.voiceURI=e.target.value;store.set('cadence.settings',settings);say('Rest. Next up, air squats.',true)}});
+layer.addEventListener('input',e=>{if(e.target.matches('[data-libq]')&&S.lib){S.lib.q=e.target.value;document.getElementById('lib-list').innerHTML=libListHTML()}});
 layer.addEventListener('click',e=>{
+  if(S.lib){const lp=e.target.closest('[data-libpart]'),la=e.target.closest('[data-libadd]');
+    if(lp){S.lib.part=lp.dataset.libpart;layer.querySelectorAll('[data-libpart]').forEach(b=>b.setAttribute('aria-pressed',b===lp));document.getElementById('lib-list').innerHTML=libListHTML();return}
+    if(la){addFromLib(la.dataset.libadd);return}
+    if(e.target.closest('.lib-head [data-act="closeLib"]')||e.target.matches('.sheet[data-act="closeLib"]')){S.lib=null;renderLib()}
+    return}
   const sw=e.target.closest('[data-set]');if(sw){settings[sw.dataset.set]=!settings[sw.dataset.set];store.set('cadence.settings',settings);if(sw.dataset.set==='loud')setSession();renderSheet();return}
   if(e.target.closest('[data-act="previewVoice"]')){say(`Push-ups. Twelve reps. Set two of three. Go ${settings.nick}, go.`,true);return}
   if(e.target.closest('[data-act="closeSheet"]')&&!e.target.closest('[data-stop]')||e.target.closest('.panel [data-act="closeSheet"]')){S.sheet=false;renderSheet()}

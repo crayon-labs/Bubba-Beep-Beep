@@ -208,6 +208,16 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .run-extra [hidden]{display:none}
 .tut{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 14px 8px 8px;flex:none}
 .tut[hidden]{display:none}
+.focus{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 14px 8px 8px;flex:none}
+.focus[hidden]{display:none}
+.focus-map{width:140px;flex:none}
+.body{width:100%;height:auto;display:block}
+.body .mbase>*{fill:var(--surface-2)}
+.body .mn>*{fill:var(--line)}
+.body .mp>*{fill:var(--phase)}
+.body .ms>*{fill:var(--phase);opacity:.4}
+.body .mlabel{fill:var(--muted);font-size:9px}
+.focus-c{margin-top:2px}
 .tut svg{width:140px;height:116px;flex:none}
 .fig .lim{stroke:var(--fg);stroke-width:4.5;stroke-linecap:round}
 .fig .far{opacity:.35}
@@ -889,6 +899,55 @@ function renderProgress(){
   </div></div>`;
   S.progPts=pts;
 }
+// ---------- muscle focus ----------
+// Flat 2D body map, front (left) and back (right). Each muscle region carries its code; bodyMap() colours the main
+// muscles in the phase colour and supporting ones lighter. Coordinates are a 100x200 box per view.
+const MUSCLE_NAME={chest:'Chest',shoulders:'Shoulders',reardelts:'Rear shoulders',biceps:'Biceps',triceps:'Triceps',forearms:'Forearms',abs:'Abs',obliques:'Obliques',lats:'Lats',upperback:'Upper back',traps:'Traps',lowerback:'Lower back',glutes:'Glutes',quads:'Quads',hamstrings:'Hamstrings',adductors:'Inner thighs',calves:'Calves'};
+const BODY_BASE=`<circle cx="50" cy="17" r="11"/><rect x="45" y="26" width="10" height="8" rx="3"/><rect x="31" y="34" width="38" height="62" rx="12"/>
+  <rect x="17" y="40" width="13" height="34" rx="6.5"/><rect x="70" y="40" width="13" height="34" rx="6.5"/><rect x="14" y="72" width="11" height="32" rx="5.5"/><rect x="75" y="72" width="11" height="32" rx="5.5"/>
+  <circle cx="18" cy="108" r="5"/><circle cx="82" cy="108" r="5"/><rect x="33" y="90" width="34" height="18" rx="8"/>
+  <rect x="33" y="100" width="16" height="48" rx="8"/><rect x="51" y="100" width="16" height="48" rx="8"/><rect x="35" y="146" width="13" height="40" rx="6.5"/><rect x="52" y="146" width="13" height="40" rx="6.5"/>
+  <rect x="33" y="184" width="15" height="7" rx="3.5"/><rect x="52" y="184" width="15" height="7" rx="3.5"/>`;
+const BODY_FRONT=[
+  ['shoulders','<ellipse cx="27" cy="43" rx="8" ry="7"/><ellipse cx="73" cy="43" rx="8" ry="7"/>'],
+  ['chest','<rect x="35" y="39" width="14" height="15" rx="5"/><rect x="51" y="39" width="14" height="15" rx="5"/>'],
+  ['biceps','<rect x="19" y="51" width="9" height="20" rx="4.5"/><rect x="72" y="51" width="9" height="20" rx="4.5"/>'],
+  ['forearms','<rect x="16" y="76" width="8" height="24" rx="4"/><rect x="76" y="76" width="8" height="24" rx="4"/>'],
+  ['abs','<rect x="42" y="57" width="16" height="31" rx="5"/>'],
+  ['obliques','<rect x="34" y="59" width="6.5" height="25" rx="3.25"/><rect x="59.5" y="59" width="6.5" height="25" rx="3.25"/>'],
+  ['adductors','<path d="M47 102 L49 128 L46 128 Z M53 102 L51 128 L54 128 Z"/>'],
+  ['quads','<rect x="35" y="103" width="11" height="40" rx="5.5"/><rect x="54" y="103" width="11" height="40" rx="5.5"/>'],
+  ['calves','<rect x="37" y="152" width="9" height="28" rx="4.5"/><rect x="54" y="152" width="9" height="28" rx="4.5"/>']];
+const BODY_BACK=[
+  ['traps','<path d="M50 30 L63 40 L50 50 L37 40 Z"/>'],
+  ['reardelts','<ellipse cx="27" cy="43" rx="8" ry="7"/><ellipse cx="73" cy="43" rx="8" ry="7"/>'],
+  ['upperback','<rect x="43" y="49" width="14" height="14" rx="4"/>'],
+  ['lats','<path d="M35 46 L42 50 L42 76 L36 70 Z M65 46 L58 50 L58 76 L64 70 Z"/>'],
+  ['lowerback','<rect x="43" y="66" width="14" height="22" rx="5"/>'],
+  ['triceps','<rect x="19" y="51" width="9" height="20" rx="4.5"/><rect x="72" y="51" width="9" height="20" rx="4.5"/>'],
+  ['forearms','<rect x="16" y="76" width="8" height="24" rx="4"/><rect x="76" y="76" width="8" height="24" rx="4"/>'],
+  ['glutes','<ellipse cx="42" cy="98" rx="8" ry="9"/><ellipse cx="58" cy="98" rx="8" ry="9"/>'],
+  ['hamstrings','<rect x="35" y="110" width="11" height="34" rx="5.5"/><rect x="54" y="110" width="11" height="34" rx="5.5"/>'],
+  ['calves','<ellipse cx="41.5" cy="160" rx="5.5" ry="14"/><ellipse cx="58.5" cy="160" rx="5.5" ry="14"/>']];
+function bodyMap(f){const cls=m=>f.p.includes(m)?'mp':f.s.includes(m)?'ms':'mn';
+  const view=(regs,dx,label)=>`<g transform="translate(${dx} 0)"><g class="mbase">${BODY_BASE}</g>${regs.map(([m,d])=>`<g class="${cls(m)}">${d}</g>`).join('')}<text x="50" y="199" text-anchor="middle" class="mlabel">${label}</text></g>`;
+  return `<svg class="body" viewBox="0 0 210 202" role="img" aria-label="Focus on ${f.p.map(m=>MUSCLE_NAME[m]).join(', ')}">${view(BODY_FRONT,0,'Front')}${view(BODY_BACK,110,'Back')}</svg>`}
+// Muscles per move: p = main focus, s = also working.
+const MOVE_MUSCLES={squat:'quads glutes|hamstrings abs',split:'quads glutes|hamstrings adductors',hinge:'hamstrings glutes|lowerback',row:'lats upperback|biceps reardelts',renegade:'lats abs|shoulders triceps',
+  revfly:'reardelts upperback|traps',press:'shoulders|triceps traps',curl:'biceps|forearms',floorpress:'chest|triceps shoulders',fly:'chest|shoulders',pushup:'chest triceps|shoulders abs',kickback:'triceps|',
+  pullover:'lats chest|triceps',plank:'abs|shoulders obliques',sideplank:'obliques|abs shoulders',hundred:'abs|obliques',teaser:'abs|obliques',legstretch:'abs obliques|',deadbug:'abs|obliques',
+  swim:'lowerback glutes|upperback reardelts',bridge:'glutes|hamstrings',sidelying:'glutes|adductors',climber:'abs|shoulders quads',swing:'glutes hamstrings|lowerback shoulders',
+  lateralraise:'shoulders|traps',frontraise:'shoulders|',shrug:'traps|',calfraise:'calves|',crunch:'abs|',legraise:'abs|obliques',dip:'triceps|chest shoulders',triext:'triceps|',donkey:'glutes|hamstrings',
+  swan:'lowerback|upperback glutes',birddog:'lowerback abs|glutes shoulders',carry:'forearms traps|abs',upright:'shoulders traps|',twist:'obliques|abs',sidelunge:'adductors glutes|quads',
+  burpee:'quads chest|shoulders abs',jack:'calves shoulders|quads glutes',thruster:'quads shoulders|glutes triceps',punch:'shoulders|obliques abs',rollup:'abs|',roll:'abs|',
+  spinestretch:'hamstrings lowerback|',catcow:'lowerback abs|',child:'lowerback lats|',downdog:'hamstrings calves|shoulders',march:'quads|calves abs'};
+// Name overrides where the drawn move isn't the muscle story (e.g. pull-ups reuse the press animation). First match wins.
+const MUSCLE_RULES=[[/pulldown|pull.?up|chin.?up/,'lats biceps|upperback forearms'],[/pushdown/,'triceps|'],[/face pull|pull.?apart|y fly|reverse fly|rear delt/,'reardelts upperback|traps'],[/cable fly/,'chest|shoulders'],
+  [/leg curl|hamstring curl|walkout/,'hamstrings|glutes'],[/leg extension/,'quads|'],[/wrist curl/,'forearms|'],[/reverse curl|hammer|zottman/,'biceps forearms|'],[/close.?grip|diamond|tate|skull/,'triceps|chest shoulders'],
+  [/incline/,'chest shoulders|triceps'],[/clamshell|fire hydrant|lateral walk|side kick|side-lying leg/,'glutes|adductors'],[/sprint|jump rope|high knee|butt kick|skater/,'quads calves|glutes'],
+  [/hip flexor|world.?s greatest/,'quads glutes|hamstrings'],[/pigeon/,'glutes|lowerback'],[/hollow/,'abs|obliques'],[/good morning/,'hamstrings lowerback|glutes'],[/farmer|carry/,'forearms traps|abs']];
+const parseMus=str=>{const [p,s]=str.split('|');return {p:p.split(' ').filter(Boolean),s:(s||'').split(' ').filter(Boolean)}};
+function musclesFor(name){const n=(name||'').toLowerCase(),r=MUSCLE_RULES.find(([re])=>re.test(n));return parseMus(r?r[1]:MOVE_MUSCLES[moveFor(name)]||MOVE_MUSCLES.march)}
 function tutStop(){cancelAnimationFrame(tutRAF);tutRAF=0;const box=document.getElementById('tut');if(box)box.dataset.move=''}
 function renderRun(){
   const R=S.run,it=R.seq[R.idx];
@@ -900,6 +959,7 @@ function renderRun(){
       <div class="center"><div class="time num" id="time"></div><div class="name" id="name"></div><div class="sub" id="sub"></div></div>
     </div></div>
     <div class="progress-dots" id="dots"></div>
+    <div class="focus" id="focus" hidden><div class="focus-map" id="focus-map"></div><div class="tut-t"><span class="eyebrow">Focus on</span><b id="focus-p"></b><small id="focus-s"></small><small id="focus-c" class="focus-c"></small></div></div>
     <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small></div></div>
     <div class="next" id="next"></div>
     <div class="wt" id="wt" hidden><span class="wt-l"><span class="eyebrow">Dumbbell weight</span><b id="wt-n"></b></span><button type="button" class="wt-b" data-act="wtDec" aria-label="Decrease weight">−</button><input id="wt-in" class="num" inputmode="decimal" placeholder="–" aria-label="Weight in kilograms" autocomplete="off"><span class="wt-u">kg</span><button type="button" class="wt-b" data-act="wtInc" aria-label="Increase weight">+</button></div>
@@ -929,6 +989,12 @@ function paintRun(full){
        if(!(pw.label in R.weights)){const last=lastWeight(R.w,pw.label);if(last!==null)R.weights[pw.label]=last}
        const v=R.weights[pw.label];document.getElementById('wt-in').value=typeof v==='number'?+v.toFixed(1):''}
      if(!show)box.dataset.ex=''}
+    // During an exercise, show which muscles to focus on and engage.
+    {const fc=document.getElementById('focus'),on=it.kind==='work';fc.hidden=!on;
+     if(on&&fc.dataset.ex!==it.label){fc.dataset.ex=it.label;const f=musclesFor(it.label);document.getElementById('focus-map').innerHTML=bodyMap(f);
+       document.getElementById('focus-p').textContent=f.p.map(m=>MUSCLE_NAME[m]).join(' · ');document.getElementById('focus-s').textContent=f.s.length?`Also working: ${f.s.map(m=>MUSCLE_NAME[m]).join(', ')}`:'';
+       document.getElementById('focus-c').textContent=MOVES[moveFor(it.label)].cue}
+     if(!on)fc.dataset.ex=''}
     const showTut=it.kind!=='work'&&!!it.next,tut=document.getElementById('tut');tut.hidden=!showTut;
     if(showTut){const n=it.next;document.getElementById('tut-e').textContent=['Up next',fmt(n.dur),n.reps?repsTxt(n.reps):''].filter(Boolean).join(' · ');document.getElementById('tut-n').textContent=n.label;document.getElementById('tut-c').textContent=MOVES[moveFor(n.label)].cue;tutStart(n.label)}else tutStop();
     document.getElementById('addrest').hidden=it.kind==='work';document.getElementById('restartex').hidden=it.kind!=='work';

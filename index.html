@@ -285,6 +285,9 @@ function loadVoices(){try{VOICES=speechSynthesis.getVoices().filter(v=>/^en/i.te
 if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=()=>{loadVoices();if(S.sheet)renderSheet()}}
 function scoreVoice(v){const n=v.name.toLowerCase();let s=0;if(/natural|neural|premium|enhanced|siri/.test(n))s+=50;if(/samantha|ava|allison|zoe|karen|moira|serena|daniel|aria|jenny|libby|sonia|google (uk|us)/.test(n))s+=30;if(/google/.test(n))s+=10;if(/compact|eloquence|fred|zarvox|whisper|bells|cellos|trinoids|albert|junior|bahh|boing|bubbles|deranged|hysterical|organ|ralph|good news|bad news/.test(n))s-=60;if(v.default)s+=5;return s}
 function pickVoice(){if(settings.voiceURI){const v=VOICES.find(x=>x.voiceURI===settings.voiceURI);if(v)return v}return VOICES.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a))[0]||null}
+// Endearing lines: the nickname's first vowel is drawn out ("Bubba" -> "Buuubba") and spoken a touch higher and slower.
+const aww=()=>settings.nick.replace(/[aeiou]/i,v=>v+v+v);
+const SWEET={pitch:1.2,rate:0.85};
 function say(text,force,o){if((!settings.voice&&!force)||!('speechSynthesis' in window))return false;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const v=pickVoice();if(v)u.voice=v;u.rate=(o&&o.rate)||0.95;u.pitch=(o&&o.pitch)||1;u.volume=1;speechSynthesis.speak(u);return true}catch(e){return false}}
 const NUMW=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
 const spokenNum=n=>NUMW[n]||String(n);
@@ -378,7 +381,7 @@ function renderBuilder(){
             <div class="mini"><span class="eyebrow">Sets</span>${miniStep(`exercises.${i}.sets`,e.sets,{min:1,step:1})}</div>
             <div class="mini"><span class="eyebrow">Set rest</span>${miniStep(`exercises.${i}.restBetweenSets`,e.restBetweenSets,{min:0,step:5,fmtv:fmt})}</div>
           </div>
-          <div class="ex-foot"><input class="text-field" id="f-reps-${e.id}" data-text="exercises.${i}.reps" placeholder="Target reps (shown on screen, e.g. 12 or 8 each side)" value="${esc(e.reps)}" style="flex:1;min-width:0;padding:8px 10px;font-size:13.5px">
+          <div class="ex-foot"><input class="text-field" id="f-reps-${e.id}" data-text="exercises.${i}.reps" placeholder="Target reps, e.g. 12" value="${esc(e.reps)}" style="flex:1;min-width:0;padding:8px 10px">
             <span class="tools"><button class="icon-btn" data-exact="up" data-i="${i}" aria-label="Move up" ${i===0?'disabled':''}>${I.up}</button><button class="icon-btn" data-exact="down" data-i="${i}" aria-label="Move down" ${i===w.exercises.length-1?'disabled':''}>${I.down}</button><button class="icon-btn" data-exact="dup" data-i="${i}" aria-label="Duplicate">${I.copy}</button><button class="icon-btn" data-exact="del" data-i="${i}" aria-label="Remove" ${w.exercises.length===1?'disabled':''}>${I.trash}</button></span></div>
         </div>`).join('')}
         <button class="add-ex" data-act="addEx">+ Add exercise</button>
@@ -417,7 +420,7 @@ function startRun(w){
 function beginInterval(i,first){
   const R=S.run;R.idx=i;const it=R.seq[i];R.endAt=Date.now()+it.dur*1000;R.remain=it.dur*1000;R.lastSec=null;
   if(it.kind==='work'){beepWork();const parts=[it.label+'.'];if(it.reps)parts.push(/^\d+$/.test(it.reps)?`${spokenNum(+it.reps)} reps.`:`${it.reps}.`);if(it.sets>1)parts.push(`Set ${spokenNum(it.set)} of ${spokenNum(it.sets)}.`);if(!it.next)parts.push(pick([`Last one, ${settings.nick}. Make it count.`,`Final interval. You're incredible.`]));else if(Math.random()<0.3)parts.push(pick([`Go ${settings.nick}, go.`,`You've got this.`,`Looking strong.`,`Beep beep.`]));say(parts.join(' '))}
-  else if(it.kind==='prep'){if(!first)beepRest();say(it.next?`Get ready, ${settings.nick}. First up, ${it.next.label}.`:'Get ready.')}
+  else if(it.kind==='prep'){if(!first)beepRest();say(`${aww()}, let's get ready!`,false,SWEET)}
   else{beepRest();const nx=it.next&&it.dur>=8?` Next up, ${it.next.label}.`:'';say((it.kind==='round'?pick([`Round ${spokenNum(it.round)} done. ${settings.nick}, you're a machine.`,`That's round ${spokenNum(it.round)}. Breathe. Drink water. Flex a little.`]):pick(['Rest.',`Rest, ${settings.nick}.`,'Breathe.','Shake it out.']))+nx)}
 }
 function tick(){
@@ -441,7 +444,7 @@ function finishRun(completed){
   const done=completed?R.seq.length:R.idx;
   const entry={id:uid(),name:R.w.name||'Quick timer',color:R.color,at:Date.now(),duration:elapsed,intervals:done,total:R.seq.length,completed,planned:total(R.seq),work:R.seq.filter((x,i)=>x.kind==='work'&&(completed||i<R.idx)).length};
   history.unshift(entry);history=history.slice(0,100);store.set('cadence.history',history);
-  if(completed){beepDone();setTimeout(()=>say(pick([`Done! ${settings.nick}, that's the whole thing. Go drink some water.`,`Workout complete. ${settings.nick}, you absolute legend.`,`All done. Someone's very proud of you.`])),500)}
+  if(completed){beepDone();setTimeout(()=>say(`Great work, ${aww()}!`,false,SWEET),500)}
   S.summary=entry;S.screen='summary';S.run=null;render();
 }
 

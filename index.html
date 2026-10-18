@@ -300,6 +300,24 @@ const SEED=[
     {id:uid(),name:'Plank with dumbbell drag-through',dur:40,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Side plank reach-under',dur:30,sets:2,reps:'left, then right',restBetweenSets:5},
     {id:uid(),name:'Weighted dead bug',dur:45,sets:1,reps:'',restBetweenSets:15}]},
+  // Classical mat order, time-based, short transitions.
+  {id:'matflow',name:'Mat Pilates Flow',color:'prep',prep:8,rounds:1,restBetweenExercises:10,restBetweenRounds:0,
+   exercises:[
+    {id:uid(),name:'The Hundred',dur:60,sets:1,reps:'pump and breathe',restBetweenSets:10},
+    {id:uid(),name:'Roll up',dur:45,sets:1,reps:'slow',restBetweenSets:10},
+    {id:uid(),name:'Single-leg circle',dur:40,sets:2,reps:'right, then left',restBetweenSets:5},
+    {id:uid(),name:'Rolling like a ball',dur:30,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Single-leg stretch',dur:40,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Double-leg stretch',dur:40,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Criss-cross',dur:40,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Spine stretch forward',dur:40,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Saw',dur:40,sets:1,reps:'alternate sides',restBetweenSets:10},
+    {id:uid(),name:'Swan',dur:40,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Side kick series',dur:45,sets:2,reps:'right, then left',restBetweenSets:5},
+    {id:uid(),name:'Teaser',dur:40,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Swimming',dur:30,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Leg pull front',dur:30,sets:1,reps:'',restBetweenSets:10},
+    {id:uid(),name:'Spine twist',dur:40,sets:1,reps:'',restBetweenSets:10}]},
   {id:'legs',name:'Legs',color:'work',prep:8,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
    exercises:[
     {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'take 3 sec to lower, pause',restBetweenSets:20},
@@ -592,12 +610,28 @@ const MOVES={
   crunch:{a:'40 86 50 86 46 78 41 82 74 86 86 72 96 90',b:'49 74 55 80 52 71 47 75 74 86 86 72 96 90',t:1800,cue:'Ribs to hips, chin off your chest, exhale as you curl'},
   legraise:{a:'40 86 50 86 60 90 70 90 74 86 92 85 110 84',b:'40 86 50 86 60 90 70 90 74 86 76 68 78 50',t:3000,cue:'Low back pressed down, lower your legs slowly'},
   dip:{a:'72 30 72 39 66 51 62 62 74 62 92 60 98 92',b:'72 42 72 51 59 54 62 62 74 74 92 66 98 92',t:2200,cue:'Elbows bend straight back, shoulders away from your ears'},
-  triext:{a:'80 25 80 34 88 22 90 9 80 58 80 75 80 92',b:'80 25 80 34 88 22 79 29 80 58 80 75 80 92',db:1,cue:'Elbows by your ears, only the forearms move'},
+  triext:{a:'80 25 80 34 92 24 95 11 80 58 80 75 80 92',b:'80 25 80 34 92 24 83 32 80 58 80 75 80 92',db:1,cue:'Elbows by your ears, only the forearms move'},
   donkey:{a:'108 66 100 70 100 80 100 92 74 70 74 88 57 90',b:'108 66 100 70 100 80 100 92 74 70 56 70 56 52 100 80 100 92 74 88 57 90',t:2000,cue:'Core braced, press your heel up to the ceiling'},
+  swan:{a:'106 84 96 86 92 90 100 90 72 88 56 88 40 88',b:'103 68 94 74 97 82 100 90 72 88 56 88 40 88',t:2600,cue:'Lengthen through the crown, lift the chest without crunching the low back'},
+  birddog:{a:'108 66 100 70 100 80 100 92 74 70 74 88 57 90',b:'108 66 100 70 112 68 124 66 74 70 74 88 57 90 100 80 100 92 56 68 40 66',t:2600,cue:'Reach opposite arm and leg long, hips stay square'},
+  carry:{a:'80 25 80 34 76 46 74 58 80 58 96 62 94 79 84 46 92 38 80 75 80 92',b:'80 25 80 34 84 46 92 38 80 58 80 75 80 92 76 46 74 58 96 62 94 79',t:1100,db:1,cue:'Stand tall, shoulders down, walk with control'},
+  upright:{a:'80 25 80 34 76 47 78 60 80 58 76 75 75 92 84 47 82 60 84 75 85 92',b:'80 25 80 34 64 32 76 40 80 58 76 75 75 92 96 32 84 40 84 75 85 92',front:1,db:1,cue:'Lead with the elbows, stop at chest height'},
+  twist:{a:'76 50 78 59 70 70 64 77 80 84 73 70 70 86 76 71 66 78 87 70 90 86',b:'84 50 82 59 90 70 96 77 80 84 73 70 70 86 84 71 94 78 87 70 90 86',front:1,t:1800,db:1,cue:'Sit tall, rotate from the ribs, not just the arms'},
+  sidelunge:{a:'80 25 80 34 74 46 78 40 80 58 70 75 64 92 86 46 82 40 90 75 96 92',b:'70 38 71 47 64 58 68 52 74 68 60 78 56 92 78 58 74 52 88 80 98 92',front:1,t:2000,cue:'Sit back into one hip, keep the other leg long'},
+  burpee:{a:'92 58 86 64 92 76 96 90 70 80 84 76 80 92',b:'108 63 100 66 100 78 100 90 77 76 60 83 43 90',t:1600,cue:'Hands down, jump back, jump in, stand tall'},
+  jack:{a:'80 25 80 34 72 47 71 60 80 58 77 75 76 92 88 47 89 60 83 75 84 92',b:'80 25 80 34 66 24 60 12 80 58 70 75 62 92 94 24 100 12 90 75 98 92',front:1,t:900,cue:'Light on your feet, arms and legs move together'},
+  thruster:{a:'79 44 76 52 84 60 84 47 68 74 85 74 80 92',b:'80 25 80 34 86 22 88 9 80 58 80 75 80 92',t:2000,db:1,cue:'Squat deep, then drive up and press in one move'},
+  punch:{a:'81 25 80 34 93 36 106 36 80 58 84 75 88 92 84 46 88 36 76 75 70 92',b:'81 25 80 34 84 46 88 36 80 58 84 75 88 92 93 36 106 36 76 75 70 92',t:700,cue:'Stay light, punch from your core, guard up'},
+  rollup:{a:'40 86 50 86 38 86 26 86 74 86 92 86 110 86',b:'101 80 94 74 104 80 114 84 74 86 92 86 110 86',t:3200,cue:'Peel up one vertebra at a time, reach past your toes'},
+  roll:{a:'72 56 70 64 80 68 84 72 74 84 84 66 86 80',b:'52 82 58 84 66 70 76 62 72 72 76 58 88 58',t:1400,cue:'Stay in a tight ball, roll to your shoulders and back'},
+  spinestretch:{a:'70 55 70 64 82 64 94 64 70 88 88 88 106 88',b:'93 78 86 72 96 78 106 84 70 88 88 88 106 88',t:2800,cue:'Sit tall, then round forward into a C-curve'},
+  catcow:{a:'108 60 100 72 100 82 100 92 74 72 74 88 57 90',b:'105 76 100 66 100 79 100 92 74 68 74 88 57 90',t:3000,cue:'Move one vertebra at a time with your breath'},
+  child:{a:'108 66 100 70 100 80 100 92 74 70 74 88 57 90',b:'93 86 84 82 97 90 110 91 62 84 76 90 57 91',t:3200,cue:'Sink your hips to your heels, reach long, breathe into your back'},
+  downdog:{a:'108 63 100 66 100 78 100 90 77 76 60 83 43 90',b:'98 77 94 70 97 80 100 90 74 52 60 71 46 90',t:2600,cue:'Hips high, heels reaching down, long spine'},
   march:{a:'80 25 80 34 76 46 74 58 80 58 96 62 94 79 84 46 92 38 80 75 80 92',b:'80 25 80 34 84 46 92 38 80 58 80 75 80 92 76 46 74 58 96 62 94 79',t:1000,cue:'Stay light and keep breathing'}
 };
 // First match wins, so specific names come before general ones.
-const MOVE_RULES=[[/overhead (tricep )?extension|tricep extension|skull/,'triext'],[/\bdips?\b/,'dip'],[/lateral raise|y raise/,'lateralraise'],[/front raise/,'frontraise'],[/shrug/,'shrug'],[/calf/,'calfraise'],[/donkey|fire hydrant/,'donkey'],[/leg raise|leg lower/,'legraise'],[/incline.*press|close.?grip/,'floorpress'],[/step.?up/,'split'],[/frog/,'bridge'],[/wall sit/,'squat'],[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank'],[/crunch/,'crunch']];
+const MOVE_RULES=[[/side plank/,'sideplank'],[/burpee/,'burpee'],[/jumping jack|star jump/,'jack'],[/thruster/,'thruster'],[/shadow box|punch/,'punch'],[/roll.?up/,'rollup'],[/roll down|forward fold/,'hinge'],[/rolling like a ball|rocker/,'roll'],[/spine stretch|\bsaw\b|hamstring stretch/,'spinestretch'],[/cat.?cow|thread the needle/,'catcow'],[/child|pigeon/,'child'],[/down(ward)? dog/,'downdog'],[/swan|cobra|back extension/,'swan'],[/bird ?dog/,'birddog'],[/farmer|carry/,'carry'],[/upright row/,'upright'],[/twist|thoracic/,'twist'],[/skater|lateral lunge|side lunge|lateral walk/,'sidelunge'],[/hip flexor|world.?s greatest/,'split'],[/snatch/,'swing'],[/inchworm/,'pushup'],[/hollow/,'hundred'],[/toe tap/,'deadbug'],[/snow angel/,'swim'],[/walkout/,'bridge'],[/glute kickback/,'donkey'],[/side kick/,'sidelying'],[/leg pull/,'plank'],[/leg circle|corkscrew/,'legraise'],[/shoulder roll/,'shrug'],[/around the world/,'lateralraise'],[/halo/,'press'],[/tate|hex press/,'floorpress'],[/overhead (tricep )?extension|tricep extension|skull/,'triext'],[/\bdips?\b/,'dip'],[/lateral raise|y raise/,'lateralraise'],[/front raise/,'frontraise'],[/shrug/,'shrug'],[/calf/,'calfraise'],[/donkey|fire hydrant/,'donkey'],[/leg raise|leg lower/,'legraise'],[/incline.*press|close.?grip (floor |bench )?press/,'floorpress'],[/step.?up/,'split'],[/frog/,'bridge'],[/wall sit/,'squat'],[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank'],[/crunch/,'crunch']];
 // Plain numbers read as "12 reps"; descriptive labels like "left, then right" show as written.
 const repsTxt=r=>/^\d+$/.test(r)?`${r} reps`:r;
 function moveFor(name){const n=(name||'').toLowerCase();const r=MOVE_RULES.find(([re])=>re.test(n));return r?r[1]:'march'}
@@ -638,15 +672,18 @@ function tutStart(name){
   tutRAF=requestAnimationFrame(frame);
 }
 // ---------- exercise library ----------
-// Ten common exercises per body part; each maps to a move above for its picture and cue.
+// Fifteen common exercises per body part, plus full-body cardio, Pilates mat and mobility; each maps to a move above for its picture and cue.
 const LIB={
-  Chest:['Push-up','Wide push-up','Incline push-up','Decline push-up','Dumbbell bench press','Incline dumbbell press','Dumbbell floor press','Dumbbell fly','Squeeze press','Dumbbell pullover'],
-  Back:['Bent-over row','Single-arm row','Renegade row','Reverse fly','Superman','Pilates swimming','Romanian deadlift','Dumbbell deadlift','Dumbbell shrug','Good morning'],
-  Shoulders:['Overhead press','Arnold press','Lateral raise','Front raise','Rear delt fly','Pike push-up','Push press','Y raise','Plank shoulder tap','Half-kneeling press'],
-  Arms:['Bicep curl','Hammer curl','Concentration curl','Zottman curl','Tricep kickback','Overhead tricep extension','Skull crusher','Tricep dip','Diamond push-up','Close-grip floor press'],
-  Core:['Plank','Side plank','Dead bug','The Hundred','Teaser','Crunch','Bicycle crunch','Leg raise','Mountain climbers','Single-leg stretch'],
-  Legs:['Goblet squat','Sumo squat','Jump squat','Bulgarian split squat','Reverse lunge','Walking lunge','Step-up','Romanian deadlift','Calf raise','Wall sit'],
-  Glutes:['Glute bridge','Single-leg glute bridge','Hip thrust','Donkey kick','Fire hydrant','Clamshell','Side-lying leg lift','Curtsy lunge','Sumo deadlift','Kettlebell swing']
+  Chest:['Push-up','Wide push-up','Incline push-up','Decline push-up','Dumbbell bench press','Incline dumbbell press','Dumbbell floor press','Dumbbell fly','Squeeze press','Dumbbell pullover','Pilates push-up','Archer push-up','Staggered push-up','Single-arm floor press','Hex press'],
+  Back:['Bent-over row','Single-arm row','Renegade row','Reverse fly','Superman','Pilates swimming','Romanian deadlift','Dumbbell deadlift','Dumbbell shrug','Good morning','Tripod row','Chest-supported row','Swan','Reverse snow angel',"Farmer's carry"],
+  Shoulders:['Overhead press','Arnold press','Lateral raise','Front raise','Rear delt fly','Pike push-up','Push press','Y raise','Plank shoulder tap','Half-kneeling press','Upright row','Seated dumbbell press','Around the world','Dumbbell halo','Bear plank hold'],
+  Arms:['Bicep curl','Hammer curl','Concentration curl','Zottman curl','Tricep kickback','Overhead tricep extension','Skull crusher','Tricep dip','Diamond push-up','Close-grip floor press','Reverse curl','Cross-body hammer curl','Wrist curl','Close-grip push-up','Tate press'],
+  Core:['Plank','Side plank','Dead bug','The Hundred','Teaser','Crunch','Bicycle crunch','Leg raise','Mountain climbers','Single-leg stretch','Russian twist','Hollow body hold','Side plank hip dip','Bird dog','Toe taps'],
+  Legs:['Goblet squat','Sumo squat','Jump squat','Bulgarian split squat','Reverse lunge','Walking lunge','Step-up','Romanian deadlift','Calf raise','Wall sit','Lateral lunge','Single-leg Romanian deadlift','Dumbbell front squat','Hamstring walkout','Single-leg calf raise'],
+  Glutes:['Glute bridge','Single-leg glute bridge','Hip thrust','Donkey kick','Fire hydrant','Clamshell','Side-lying leg lift','Curtsy lunge','Sumo deadlift','Kettlebell swing','Frog pump','Glute kickback','B-stance hip thrust','Lateral walk','Pilates side kick'],
+  'Full body':['Burpee','Jumping jacks','High knees','Butt kicks','Squat jump','Skaters','Mountain climbers','Jump lunge','Plank jack','Thruster','Dumbbell snatch','Inchworm','Star jump','Shadow boxing','Jump rope'],
+  Pilates:['The Hundred','Roll up','Single-leg circle','Rolling like a ball','Single-leg stretch','Double-leg stretch','Criss-cross','Spine stretch forward','Saw','Swan','Spine twist','Side kick series','Teaser','Swimming','Leg pull front'],
+  Mobility:['Cat-cow',"Child's pose",'Downward dog','Cobra stretch','Hip flexor stretch',"World's greatest stretch",'Thread the needle','Thoracic rotation','Hamstring stretch','Standing forward fold','Pigeon stretch','Spinal roll down','Shoulder rolls','Hip circles','Side-lying open book']
 };
 const LIB_ALL=Object.entries(LIB).flatMap(([part,names])=>names.map(name=>({name,part})));
 function libMatches(q){q=(q||'').trim().toLowerCase();return q?LIB_ALL.filter(x=>x.name.toLowerCase().includes(q)||x.part.toLowerCase().startsWith(q)):LIB_ALL}

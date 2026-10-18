@@ -219,6 +219,11 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .body .mp>*{fill:var(--phase)}
 .body .ms>*{fill:var(--phase);opacity:.4}
 .body .mlabel{fill:var(--muted);font-size:9px}
+@media (max-height:720px){.tut svg{width:104px;height:86px}.focus-map{width:116px}}
+.setup{margin:2px 0 0;padding-left:18px;font-size:13px;line-height:1.35;color:var(--fg)}
+.setup li{margin:1px 0}
+.setup:empty{display:none}
+.setup-h{font-weight:600;color:var(--fg)!important;text-transform:uppercase;letter-spacing:.06em;font-size:11px!important;margin-top:4px}
 .focus-c{margin-top:2px;min-height:2.7em}
 .focus-c b{color:var(--fg);font-weight:600}
 .focus-src{font-size:10.5px;opacity:.8}
@@ -656,7 +661,7 @@ function beginInterval(i,first){
   cancelBeeps();R.nextBeep=3;R.cheered=false;R.tipped=false;if(document.hidden)runNotify();
   if(it.kind==='work'){beepWork();const parts=[it.label+'.'];if(it.reps)parts.push(/^\d+$/.test(it.reps)?`${spokenNum(+it.reps)} reps.`:`${it.reps}.`);if(it.sets>1)parts.push(`Set ${spokenNum(it.set)} of ${spokenNum(it.sets)}.`);if(!it.next)parts.push(pick([`Last one, ${settings.nick}. Make it count.`,`Final interval. You're incredible.`]));else if(Math.random()<0.3)parts.push(pick([`Go ${settings.nick}, go.`,`You've got this.`,`Looking strong.`,`Beep beep.`]));say(parts.join(' '))}
   else if(it.kind==='prep'){if(!first)beepRest();say(`${aww()}, let's get ready!`,false,SWEET)}
-  else{beepRest();const nx=it.next&&it.dur>=8?` Next up, ${it.next.label}.`:'';say((it.kind==='round'?pick([`Round ${spokenNum(it.round)} done. ${settings.nick}, you're a machine.`,`That's round ${spokenNum(it.round)}. Breathe. Drink water. Flex a little.`]):pick(['Rest.',`Rest, ${settings.nick}.`,'Breathe.','Shake it out.']))+nx)}
+  else{beepRest();const su=it.next?setupFor(it.next.label):null,nx=it.next&&it.dur>=8?` Next up, ${it.next.label}.${su&&it.dur>=12?` ${su.steps[0]}.`:''}`:'';say((it.kind==='round'?pick([`Round ${spokenNum(it.round)} done. ${settings.nick}, you're a machine.`,`That's round ${spokenNum(it.round)}. Breathe. Drink water. Flex a little.`]):pick(['Rest.',`Rest, ${settings.nick}.`,'Breathe.','Shake it out.']))+nx)}
 }
 function tick(){
   const R=S.run;if(!R||R.paused)return;
@@ -1080,6 +1085,211 @@ const TIP_RULES=[[/roll down/,'rolldown'],[/forward fold/,'fold'],[/hamstring st
 function tipsFor(name){const n=(name||'').toLowerCase(),r=TIP_RULES.find(([re])=>re.test(n));
   const key=r?r[1]:moveFor(name),skip=r&&r[2]||0;if(!key||(!r&&key==='march')||!TIPS[key])return {tips:[],src:''};
   return {tips:TIPS[key].slice(skip),src:TIP_SRC[key]?new URL(TIP_SRC[key]).hostname.replace(/^www\./,''):''}}
+// ---------- setup ----------
+// How to get into the starting position, per exercise, from sourced research (first source per exercise in SETUP_SRC).
+// Shown on the rest card for the next exercise; the voice reads step 1 when announcing what's next.
+const SETUP={
+  "Push-up":["Place hands slightly wider than shoulders on the floor", "Extend legs back, body straight from head to heels"],
+  "Wide push-up":["Get into a plank with hands well wider than shoulders", "Point fingers forward or slightly out, body in one line"],
+  "Incline push-up":["Put hands on a bench, slightly wider than shoulders", "Walk feet back, body straight, core lightly braced"],
+  "Decline push-up":["Rest your feet on a low bench, sofa or chair", "Place hands slightly wider than shoulders on the floor"],
+  "Dumbbell bench press":["Lie on a flat bench, dumbbells in hand, feet planted", "Pull shoulder blades down and back into the bench"],
+  "Incline dumbbell press":["Set the bench to a 30 to 45 degree incline", "Sit back with dumbbells at shoulders, feet flat, blades squeezed"],
+  "Dumbbell floor press":["Sit with legs straight, dumbbells resting in your hip creases", "Lie back, bringing the dumbbells up to your chest"],
+  "Dumbbell fly":["Lie flat on a bench, feet planted, dumbbells in hand", "Press weights above chest, slight elbow bend, blades tucked"],
+  "Squeeze press":["Lie on a flat bench: head, back, glutes, both feet planted", "Hold dumbbells together over your chest, palms facing in"],
+  "Dumbbell pullover":["Lie face up on a bench, feet flat on floor", "Hold the weight above your chest with arms nearly straight"],
+  "Pilates push-up":["Stand at the top of the mat, arms reaching overhead", "Roll down and walk hands out to a plank"],
+  "Archer push-up":["Set up in a push-up, hands wider than shoulders", "Keep body straight from head to heels"],
+  "Staggered push-up":["Get into a push-up, hands wider than shoulders", "Move one hand a few inches forward, feet hip-width"],
+  "Single-arm floor press":["Lie on your back, knees bent, feet flat", "Hold one weight up, elbow bent and resting at your side"],
+  "Hex press":["Lie on a flat bench, feet planted, head and glutes down", "Press dumbbells together above your chest, palms facing in"],
+  "TRX chest press":["Lengthen straps fully and face away from the anchor", "Grip handles at shoulder height, walk feet back to lean"],
+  "Band chest press":["Anchor the band securely at chest height", "Face away from the anchor, holding a handle in each hand"],
+  "Cable fly":["Attach handles high on both pulleys, stand centred between them", "Grip handles, step forward and lean slightly forward"],
+  "Machine chest press":["Sit with back against the pad, feet flat on floor", "Grip handles neutral, elbows about 45 degrees, shoulders down"],
+  "Bent-over row":["Stand feet shoulder-width, weights in hand with overhand grip", "Hinge forward, back flat, arms hanging straight"],
+  "Single-arm row":["Put one hand and same-side knee on a bench", "Keep back flat, grab the dumbbell with your free hand"],
+  "Renegade row":["Get into a high plank gripping weights under your shoulders", "Feet slightly wider than hips, body in a straight line"],
+  "Reverse fly":["Stand with feet hip-width and hinge forward at the hips", "Keep spine straight, let the weights hang toward the floor"],
+  "Superman":["Lie face down, arms straight ahead, palms down", "Legs long, tops of feet down, neck neutral"],
+  "Pilates swimming":["Lie on your stomach, arms long in front", "Stretch legs long behind you, lengthen lower back"],
+  "Romanian deadlift":["Stand upright holding the weights in front of your thighs", "Breathe in and lightly brace your core"],
+  "Dumbbell deadlift":["Hold a dumbbell in each hand", "Stand with feet about hip-width apart, core lightly braced"],
+  "Dumbbell shrug":["Stand tall holding dumbbells at your sides", "Keep good posture with your core tight"],
+  "Good morning":["Rest the weight across your upper back and brace", "Stand with feet slightly wider than hip-width"],
+  "Tripod row":["Stand beside a bench, weight in one hand", "Put free hand on bench, step same-side foot back"],
+  "Chest-supported row":["Set a bench to about 45 degrees; lie chest-down on it", "Plant feet, let dumbbells hang straight toward the floor"],
+  "Swan":["Lie face down, hands under shoulders, elbows tucked in", "Keep legs parallel, no wider than hip-width"],
+  "Reverse snow angel":["Lie face down, forehead resting on a towel", "Place arms by your sides, palms facing up"],
+  "Farmer's carry":["Stand between the two weights", "Breathe in, hinge forward and grip the handles"],
+  "TRX row":["Hold a handle in each hand, feet flat on floor", "Lean back slowly with arms straight out in front"],
+  "Band pull-apart":["Hold the band with both hands", "Raise it in front of you on straight arms"],
+  "Lat pulldown":["Set seat and thigh pad so you sit snugly", "Grip bar overhand, slightly wider than shoulders, arms straight"],
+  "Seated cable row":["Attach a narrow handle and sit with knees slightly bent", "Sit upright, chest out, shoulders back, core engaged"],
+  "Pull-up":["Grip bar palms away, slightly wider than shoulders", "Hang with arms fully extended, chest up"],
+  "Chin-up":["Grip bar palms facing you, about shoulder-width", "Hang from the bar with arms straight"],
+  "Overhead press":["Stand with feet hip-width apart and brace your core", "Hold weight at front of shoulders, hands just outside shoulder width"],
+  "Arnold press":["Stand or sit tall holding a dumbbell in each hand", "Hold dumbbells at chest height, palms turned toward you"],
+  "Lateral raise":["Stand tall with a neutral spine and braced core", "Let weights hang at your sides, elbows slightly bent"],
+  "Front raise":["Stand feet slightly wider than hips, shoulders down and back", "Rest weights against front of thighs, palms facing you"],
+  "Rear delt fly":["Stand feet hip-width, hinge forward with a flat back", "Let weights hang below your chest, elbows slightly bent"],
+  "Pike push-up":["Place hands on floor slightly wider than shoulders", "Raise hips high so your body forms an upside-down V"],
+  "Push press":["Bring weight to front of shoulders, hands just outside them", "Stand tall, breathe in and brace your core"],
+  "Y raise":["Stand feet shoulder-width, hinge until torso is about 45 degrees", "Let weights hang in front, palms facing you"],
+  "Plank shoulder tap":["Get into a high plank, hands under shoulders", "Keep a straight line from head to heels"],
+  "Half-kneeling press":["Kneel on one knee, other foot flat ahead, both knees 90 degrees", "Hold weight at shoulder on kneeling side, torso upright"],
+  "Upright row":["Stand feet shoulder-width, chest up, core lightly braced", "Hold weight in front, overhand grip, hands slightly narrow"],
+  "Seated dumbbell press":["Sit on an upright bench, back on pad, feet planted", "Bring dumbbells up to your shoulders and brace"],
+  "Around the world":["Lie face-up on a flat bench, a dumbbell in each hand", "Open arms so weights sit level with shoulders, palms up"],
+  "Dumbbell halo":["Hold the weight upside down by its sides at chest height", "Brace your core and keep elbows tucked in"],
+  "Bear plank hold":["Get on all fours, wrists under shoulders, knees under hips", "Tuck toes, feet hip-width, keep your back flat"],
+  "Band face pull":["Anchor band or cable at shoulder height", "Grip overhand, thumbs up, step back until arms are straight"],
+  "Cable lateral raise":["Set pulley to lowest position and grab the handle", "Stand side-on, close to machine, working arm farther away"],
+  "TRX Y fly":["Face the anchor holding a handle in each hand", "Walk feet forward to lean back, arms straight ahead"],
+  "Bicep curl":["Stand feet shoulder-width, knees soft, chest up", "Hold weights at sides, palms forward, elbows tucked in"],
+  "Hammer curl":["Stand feet hip-width apart and brace your core", "Hold dumbbells at sides, palms facing your thighs"],
+  "Concentration curl":["Sit on a bench holding a dumbbell in one hand", "Rest that elbow against the inside of your thigh"],
+  "Zottman curl":["Stand tall with a dumbbell in each hand", "Let arms hang with palms facing up"],
+  "Tricep kickback":["Split stance, free hand on front thigh, lean forward", "Upper arm against your side, elbow bent 90 degrees"],
+  "Overhead tricep extension":["Stand with feet about shoulder-width apart", "Hold weight overhead, arms straight, elbows near ears"],
+  "Skull crusher":["Lie on a bench or floor, head near the end", "Hold weights straight up above your chest"],
+  "Tricep dip":["Sit with back to bench, hands gripping edge behind you", "Extend legs forward with heels on the floor"],
+  "Diamond push-up":["Get into a plank, body straight from shoulders to heels", "Touch thumbs and index fingers under chest to form diamond"],
+  "Close-grip floor press":["Lie on your back on the floor, legs straight", "Hold weight over mid-chest, hands shoulder-width apart"],
+  "Reverse curl":["Stand tall holding a weight in each hand", "Let arms hang, palms facing behind you"],
+  "Cross-body hammer curl":["Stand upright with a dumbbell in each hand", "Let arms hang at sides, palms facing your thighs"],
+  "Wrist curl":["Hold a weight with your palm facing up", "Rest forearm on thigh or bench, wrist past the edge"],
+  "Close-grip push-up":["Get into a high plank, hands shoulder-width apart", "Keep body straight head to feet, core lightly braced"],
+  "Tate press":["Lie on a bench, dumbbells held above your chest", "Thumbs close together, palms forward, elbows pointing out"],
+  "Band bicep curl":["Stand on band's middle, feet shoulder-width apart", "Hold an end in each hand, palms up, arms down"],
+  "Tricep pushdown":["Attach bar or band at highest point and grip it", "Stand feet hip-width, knees soft, back tall"],
+  "TRX bicep curl":["Face the anchor, feet hip-width, palms up on handles", "Lean back in a straight line, arms extended forward"],
+  "Cable curl":["Attach a bar to the low pulley", "Grip underhand, hands shoulder-width, step back from machine"],
+  "Plank":["Lie face down, elbows under shoulders, palms down", "Straighten legs, toes tucked, and tighten your core"],
+  "Side plank":["Lie on one side, body straight, feet stacked or staggered", "Place forearm down with elbow right under shoulder"],
+  "Dead bug":["Lie on your back, arms pointing straight up", "Lift legs so hips and knees bend to 90 degrees"],
+  "The Hundred":["Lie on your back, hug knees in, lift head and shoulders", "Extend legs to a high diagonal; arms long by sides, palms down"],
+  "Teaser":["Lie on your back with knees drawn into your chest", "Beginners: bend knees with feet flat on the mat instead"],
+  "Crunch":["Lie on your back, knees bent, feet flat near your tailbone", "Hands behind head, elbows pulled back, head in line with spine"],
+  "Bicycle crunch":["Lie on your back, hands behind head, shoulders back and down", "Lift legs so thighs are vertical, knees bent at 90 degrees"],
+  "Leg raise":["Lie flat on your back on the floor", "Rest your arms along your sides"],
+  "Mountain climbers":["Place hands on floor just ahead of shoulders, fingers forward", "Bring one knee to chest, other leg straight back, brace core"],
+  "Single-leg stretch":["Lie on your back and hug both knees into your chest", "Curl head and shoulders up, chin tucked, eyes on your abs"],
+  "Russian twist":["Sit with knees bent, feet on floor or slightly lifted", "Hold weight at chest; lean back slightly, back straight, core tight"],
+  "Hollow body hold":["Lie on your back, legs straight and feet together", "Reach arms overhead behind your head, hands optionally clasped"],
+  "Side plank hip dip":["Get into a forearm side plank, elbow under your shoulder", "Stagger feet with top foot in front of bottom foot"],
+  "Bird dog":["Kneel with knees and feet hip-width apart", "Hands under shoulders, knees under hips, fingers facing forward"],
+  "Toe taps":["Lie on your back, arms by sides, palms down, abs engaged", "Lift legs to tabletop: thighs vertical, knees bent 90 degrees"],
+  "Stability ball crunch":["Sit on ball, walk feet out until back rests on ball", "Knees at 90 degrees, feet hip-width; hands behind your head"],
+  "Stability ball pike":["Lie stomach-down over the ball, hands and feet on floor", "Walk hands out until toes rest on ball, hands under shoulders"],
+  "Hanging knee raise":["Use a bar high enough to hang with straight legs", "Jump up, grab the bar and hang still without swinging"],
+  "Medicine ball Russian twist":["Sit with knees bent, feet together, heels on the floor", "Hold ball close to your lap; sit tall and brace core"],
+  "TRX mountain climber":["Adjust straps to mid-calf length", "Face away from anchor, toes in foot cradles, move into plank"],
+  "Goblet squat":["Stand with feet about shoulder-width apart", "Hold one weight upright at your chest, elbows close to ribs"],
+  "Sumo squat":["Stand with feet wide, about three to four feet apart", "Turn your toes out about 45 degrees"],
+  "Jump squat":["Stand with feet hip-width apart, arms by your sides", "Pull shoulders down and back; brace your core"],
+  "Bulgarian split squat":["Stand in front of a knee-height bench, one foot forward", "Rest top of back foot on bench; hold weight at chest"],
+  "Reverse lunge":["Stand tall with feet hip-width apart", "Let your arms hang at your sides"],
+  "Walking lunge":["Stand with feet hip-width apart, shoulders down and back", "Brace your core; hold a ball at your midsection if using"],
+  "Step-up":["Stand facing the step, feet parallel and hip-width apart", "Hold weights at sides, palms in, shoulders down and back"],
+  "Calf raise":["Stand 6 to 12 inches from a wall, feet hip-width, facing forward", "Place palms on the wall at chest or shoulder height"],
+  "Wall sit":["Stand tall with a wall right behind you", "Lean back and hips against wall, then walk feet forward"],
+  "Lateral lunge":["Stand with feet hip-width apart", "Hold a weight in each hand, palms facing each other"],
+  "Single-leg Romanian deadlift":["Stand with feet hip-width apart, back tall and straight", "Keep knees slightly bent; hold arms out for balance if needed"],
+  "Dumbbell front squat":["Stand with feet slightly wider than hips, toes turned slightly out", "Curl dumbbells up to rest on the fronts of your shoulders"],
+  "Hamstring walkout":["Lie on your back, knees bent, feet flat and hip-width", "Squeeze glutes and lift hips into a straight-line bridge"],
+  "Single-leg calf raise":["Stand tall facing a wall, both hands on it for support", "Lift one foot so you balance on the working leg"],
+  "TRX squat":["Face the anchor holding one handle in each hand", "Bring arms to your sides so the straps are tight"],
+  "Box jump":["Set a low box on non-slip floor just ahead of your feet", "Stand feet hip-width or closer, arms at sides, core braced"],
+  "Leg press":["Sit with back and tailbone flat against the backrest", "Feet on plate, toes forward; set seat for 90-degree knees"],
+  "Leg extension":["Move the backrest so your knees line up with seat edge", "Set the round pad so it sits against your ankles"],
+  "Leg curl":["Lie face down, knees lined up with the machine's pivot", "Lower calves under pads, above the heels; grip the handles"],
+  "Stability ball hamstring curl":["Lie on your back with calves and heels on the ball", "Feet hip-width; arms out to sides, palms down, abs tight"],
+  "Glute bridge":["Lie on your back, knees bent, feet flat on the floor", "Set feet hip-width, toes forward; flatten low back gently"],
+  "Single-leg glute bridge":["Lie on your back, knees bent, feet flat and hip-width", "Hug one knee to chest; slide other foot toward center"],
+  "Hip thrust":["Sit on the floor with your upper back against a bench", "Feet flat about shoulder-width, knees bent; weight over hips"],
+  "Donkey kick":["Kneel on all fours, knees hip-width apart", "Place hands under shoulders; keep head and spine neutral"],
+  "Fire hydrant":["Get on all fours on a mat", "Stack shoulders over hands and hips over knees; brace core"],
+  "Clamshell":["Lie on your side, knees bent about 45 degrees, feet together", "Rest head on lower arm; stack hips, top hand steadying you"],
+  "Side-lying leg lift":["Lie on your side, legs straight, hips and shoulders stacked", "Rest head on bent lower arm; top hand on your hip"],
+  "Curtsy lunge":["Stand tall, feet shoulder-width apart, arms relaxed at sides", "Shift your weight onto the leg that stays planted"],
+  "Sumo deadlift":["Stand very wide, toes slightly out, weight close to shins", "Hinge down, grip weight with hands inside knees, chest up"],
+  "Kettlebell swing":["Stand feet shoulder-width, knees soft, kettlebell on floor ahead", "Grip handle with both hands, palms down; back flat, hips back"],
+  "Frog pump":["Lie on your back, soles of feet pressed together", "Pull heels close to glutes; press low back into floor"],
+  "Glute kickback":["Face a wall and brace both hands on it", "Hinge slightly forward, weight on one leg, other knee bent"],
+  "B-stance hip thrust":["Sit with upper back against a bench braced on a wall", "Set one foot forward as kickstand; rear foot does the work"],
+  "Lateral walk":["Loop a mini band around ankles or above knees", "Stand feet hip-width, toes forward, knees softly bent"],
+  "Pilates side kick":["Lie on your side along the mat's back edge, hand behind head", "Swing legs slightly forward; other hand on mat in front of chest"],
+  "Banded glute bridge":["Loop a mini band just above your knees", "Lie on back, knees bent, feet flat and hip-width apart"],
+  "Banded clamshell":["Wrap a resistance band around both legs just above knees", "Lie on your side, knees bent, hips stacked, feet together"],
+  "Cable kickback":["Clip an ankle strap to the low pulley and your ankle", "Step back facing the machine, feet shoulder-width, hold frame"],
+  "Kettlebell deadlift":["Stand feet hip-width with the kettlebell between your feet", "Hinge at hips and grip the handle with both hands"],
+  "Burpee":["Stand with feet shoulder-width apart, arms relaxed at sides", "Clear space around and above you before starting"],
+  "Jumping jacks":["Stand tall with feet together, arms at your sides", "Brace your core and clear room to jump and swing arms"],
+  "High knees":["Stand tall, feet between hip- and shoulder-width, arms at sides", "Look ahead, lift chest and brace your midsection"],
+  "Butt kicks":["Stand with feet about hip-width apart", "Let arms hang relaxed at your sides"],
+  "Squat jump":["Stand feet hip-width apart, arms at your sides", "Pull shoulders down and back; brace your core"],
+  "Skaters":["Stand tall, feet hip-width apart, hands at your sides", "Shift weight to one leg, other foot behind, knee soft"],
+  "Jump lunge":["Step into a split squat stance, front shin vertical", "Lower until back knee hovers just above the floor"],
+  "Plank jack":["Get into a plank on your hands, or on elbows", "Keep legs straight, feet together, trunk braced"],
+  "Thruster":["Hold the weights at shoulder height in a front rack", "Set feet in squat stance; drop shoulders, lift chest"],
+  "Dumbbell snatch":["Place weight on floor between feet, hip-width, toes slightly out", "Squat and grip it one-handed; chest up, core braced"],
+  "Inchworm":["Stand upright with feet together or slightly apart", "Tighten your abs to brace your spine"],
+  "Star jump":["Stand with feet about hip-width apart", "Drop into a crouch with hands down by your ankles"],
+  "Shadow boxing":["Stand feet shoulder-width, one ahead, angled about 45 degrees", "Weight on balls of feet; fists up beside your chin"],
+  "Jump rope":["Hold handles loosely near their ends, rope behind your heels", "Tuck elbows at your sides; stay on balls of feet, knees soft"],
+  "Kettlebell clean":["Set kettlebell on floor ahead; feet shoulder-width, toes slightly out", "Squat and grip handle one-handed overhand; back flat, hips back"],
+  "Turkish get-up":["Lie on your back, kettlebell pressed straight up in one hand", "Bend that side's knee, foot flat; other leg and arm out 45 degrees"],
+  "Medicine ball slam":["Stand with feet about shoulder-width apart", "Hold ball at chest, palms facing in, elbows pointing down"],
+  "Wall ball":["Stand facing a sturdy wall, about an arm's length away", "Feet shoulder-width; hold medicine ball at chest with both hands"],
+  "Bike sprint":["Set seat at hip height; knee slightly bent at pedal bottom", "Strap balls of feet over pedals; hands rest lightly on bars"],
+  "Rower sprint":["Strap feet snugly into the foot plates and heel cradles", "Grip handle palms down, arms straight, shins up near flywheel"],
+  "Treadmill sprint":["Clip the safety key to your clothing; hold the handrails", "Straddle the belt on the side rails before starting it"],
+  "Roll up":["Lie flat on your back on the mat, legs long", "Reach arms up toward the ceiling, shoulder-width apart"],
+  "Single-leg circle":["Lie on your back on the mat, arms by your sides", "Point one leg up to the ceiling; other leg long on mat"],
+  "Rolling like a ball":["Sit near the mat's front edge, knees hugged to chest", "Heels together; hold opposite ankle and clasp that wrist"],
+  "Double-leg stretch":["Lie on your back and hug both knees to chest", "Curl head and shoulders up; hands on shins"],
+  "Criss-cross":["Lie on your back, hands behind head, elbows wide", "Lift legs to tabletop or extend them to 45 degrees"],
+  "Spine stretch forward":["Sit tall, legs straight and shoulder-width apart, feet flexed", "Reach arms forward at shoulder height, palms down"],
+  "Saw":["Sit tall, legs straight, slightly wider than hips, feet flexed", "Stretch arms out to the sides at shoulder height"],
+  "Spine twist":["Sit tall with legs together in front, feet flexed", "Raise arms out to the sides at shoulder height"],
+  "Side kick series":["Lie on side, head on bottom hand, legs angled slightly forward", "Place top palm flat on mat in front of chest"],
+  "Swimming":["Lie face down, legs long and together", "Stretch arms straight overhead beside your ears"],
+  "Leg pull front":["Start on all fours, wrists under shoulders, knees under hips", "Step feet back into plank, legs and feet together"],
+  "Cat-cow":["Kneel on all fours, knees and feet hip-width apart", "Place hands under shoulders and knees under hips"],
+  "Child's pose":["Kneel with big toes touching, knees spread toward mat edges", "Lean forward, hands on floor directly under shoulders"],
+  "Downward dog":["Get into push-up position, hands shoulder-width, fingers forward", "Brace core so hips neither sag nor hike up"],
+  "Cobra stretch":["Lie face down, legs long, toes pointed back", "Place hands under shoulders, fingers facing forward"],
+  "Hip flexor stretch":["Kneel on one knee, placed directly under that hip", "Front foot forward, knee over ankle; hands on thigh"],
+  "World's greatest stretch":["Start in a plank, hands and toes on floor", "Step one foot outside same-side hand; back knee up or down"],
+  "Thread the needle":["Get on hands and knees, hands under shoulders", "Rock hips back toward heels and brace your abs"],
+  "Thoracic rotation":["Get on all fours, knees hip-width, hands shoulder-width", "Place one hand behind your head"],
+  "Hamstring stretch":["Lie on your back beside a doorway or wall corner", "Rest one leg up the wall; other leg flat on floor"],
+  "Standing forward fold":["Stand tall with feet about hip-width apart", "Keep knees softly bent, arms relaxed at your sides"],
+  "Pigeon stretch":["Begin in plank, on all fours, or in downward dog", "Slide one foot behind same wrist; lower knee to floor"],
+  "Spinal roll down":["Stand with feet parallel, ankle bones together", "Lift tall through the crown, then nod chin to chest"],
+  "Shoulder rolls":["Stand or sit tall, arms relaxed at your sides", "Let shoulders relax down, not hunched toward ears"],
+  "Hip circles":["Stand with feet together, hands on hips", "Hold a steady surface if you need balance"],
+  "Side-lying open book":["Lie on one side, knees bent 90 degrees in front", "Reach both arms forward at chest height, palms facing"],
+  "Push-ups":["Place hands flat, shoulder-width, shoulders over hands", "Extend legs back, feet together, body in straight line"],
+  "Air squats":["Stand feet slightly wider than hips, toes turned out a bit", "Arms at sides; draw shoulder blades down and back"],
+  "Half-kneeling shoulder press":["Kneel on one knee under hip, front foot in line", "Hold dumbbell at shoulder on kneeling side; stand tall"],
+  "Bent-over reverse fly":["Stand feet hip-width, dumbbells in front of thighs", "Hinge at hips until dumbbells hang below knees, elbows soft"],
+  "Bicep curl to overhead press":["Stand tall, feet hip-width apart, core tight", "Hold dumbbells at arm's length by your sides"],
+  "Floor fly":["Lie on the floor holding a dumbbell in each hand", "Feet flat or legs straight; press weights up, palms facing"],
+  "Deficit push-up":["Set two dumbbells on floor, shoulder-width; grip handles neutrally", "Step feet back into a push-up position"],
+  "Wide bent-over row":["Stand feet shoulder-width, a dumbbell in each hand", "Hinge to about 45 degrees; palms facing back, elbows wide"],
+  "Weighted swimming":["Lie face down, legs long and together", "Reach arms overhead by ears, light dumbbell in each hand"],
+  "Weighted teaser":["Lie on back holding a light dumbbell in both hands", "Hug knees to chest; curl head and shoulders up"],
+  "Single-leg stretch to criss-cross":["Lie on your back and bend both knees into chest", "Curl head and shoulders off the mat"],
+  "Plank with dumbbell drag-through":["Set up in high plank, hands under shoulders", "Place dumbbell on floor just outside one hand"],
+  "Side plank reach-under":["Lie on side, forearm down, elbow under shoulder, feet stacked", "Lift hips into a straight line; top arm points up"],
+  "Weighted dead bug":["Lie on back, a dumbbell in each hand, arms up", "Lift legs, knees bent 90 degrees; press low back down"],
+  "Side-lying leg series":["Lie on side in a straight line, head on bottom hand", "Top palm on mat by chest; legs slightly forward"]
+};
+const SETUP_SRC={"Push-up":"https://www.strengthlog.com/push-up/","Wide push-up":"https://www.healthline.com/health/exercise-fitness/wide-pushups","Incline push-up":"https://www.strengthlog.com/incline-push-up/","Decline push-up":"https://www.strengthlog.com/decline-push-up/","Dumbbell bench press":"https://www.acefitness.org/resources/everyone/exercise-library/19/chest-press/","Incline dumbbell press":"https://www.strengthlog.com/dumbbell-incline-press/","Dumbbell floor press":"https://www.strengthlog.com/dumbbell-floor-press/","Dumbbell fly":"https://www.strengthlog.com/dumbbell-chest-fly/","Squeeze press":"https://breakingmuscle.com/hex-press/","Dumbbell pullover":"https://www.acefitness.org/resources/everyone/exercise-library/37/lying-pullovers/","Pilates push-up":"https://onlinepilatesclasses.com/pilates-exercises/mat-exercises/mat-push-ups/","Archer push-up":"https://www.nasm.org/resource-center/exercise-library/archer-push-up","Staggered push-up":"https://www.acefitness.org/resources/everyone/exercise-library/327/push-up-with-staggered-hands/","Single-arm floor press":"https://www.exercise.com/exercises/single-arm-dumbbell-floor-press/","Hex press":"https://breakingmuscle.com/hex-press/","TRX chest press":"https://trxtraining.com/blogs/news/trx-chest-press","Band chest press":"https://www.liftosaur.com/exercises/band-chest-press","Cable fly":"https://www.strengthlog.com/standing-cable-chest-fly/","Machine chest press":"https://www.nasm.org/resource-center/exercise-library/chest-press-machine","Bent-over row":"https://www.strengthlog.com/barbell-row/","Single-arm row":"https://www.strengthlog.com/dumbbell-row/","Renegade row":"https://www.strengthlog.com/renegade-row/","Reverse fly":"https://www.strengthlog.com/reverse-dumbbell-flyes/","Superman":"https://www.strengthlog.com/superman-raise/","Pilates swimming":"https://onlinepilatesclasses.com/pilates-exercises/mat-exercises/mat-swimming","Romanian deadlift":"https://www.strengthlog.com/dumbbell-romanian-deadlift/","Dumbbell deadlift":"https://www.strengthlog.com/dumbbell-deadlift/","Dumbbell shrug":"https://www.strengthlog.com/dumbbell-shrug/","Good morning":"https://www.strengthlog.com/good-morning/","Tripod row":"https://trainwell.net/exercises/single-arm-split-stance-row","Chest-supported row":"https://www.strengthlog.com/chest-supported-dumbbell-row/","Swan":"https://www.peakpilates.com/blogs/theteaser/exercise-spotlight-swan-i-neck-roll-1","Reverse snow angel":"https://theprehabguys.com/vimeo-video/prone-snow-angel/","Farmer's carry":"https://www.strengthlog.com/farmers-walk/","TRX row":"https://physicaltherapyfirst.com/blog/how-to-use-a-suspension-trainer/","Band pull-apart":"https://www.strengthlog.com/band-pull-apart/","Lat pulldown":"https://www.strengthlog.com/lat-pulldown-with-pronated-grip/","Seated cable row":"https://www.strengthlog.com/cable-close-grip-seated-row/","Pull-up":"https://www.strengthlog.com/pull-up/","Chin-up":"https://www.strengthlog.com/chin-up/","Overhead press":"https://www.strengthlog.com/overhead-press/","Arnold press":"https://www.strengthlog.com/arnold-press/","Lateral raise":"https://www.strengthlog.com/dumbbell-lateral-raise/","Front raise":"https://www.acefitness.org/resources/everyone/exercise-library/54/front-raise/","Rear delt fly":"https://www.strengthlog.com/reverse-dumbbell-flyes/","Pike push-up":"https://www.nasm.org/resource-center/exercise-library/pike-push-up","Push press":"https://www.strengthlog.com/push-press/","Y raise":"https://www.puregym.com/exercises/arms-and-shoulders/rear-delt-exercises/y-raises/","Plank shoulder tap":"https://www.strengthlog.com/plank-with-shoulder-taps/","Half-kneeling press":"https://motra.com/exercises/dumbbellHalfKneelingSingleArmOverheadPress","Upright row":"https://www.strengthlog.com/barbell-upright-row/","Seated dumbbell press":"https://www.strengthlog.com/seated-dumbbell-shoulder-press/","Around the world":"https://fitnessvolt.com/dumbbell-around-the-world-exercise/","Dumbbell halo":"https://www.strengthlog.com/kettlebell-halo/","Bear plank hold":"https://www.onepeloton.com/blog/bear-plank","Band face pull":"https://www.garagegymreviews.com/face-pulls","Cable lateral raise":"https://www.strengthlog.com/cable-lateral-raise/","TRX Y fly":"https://www.fitfatherproject.com/trx-y-fly-tutorial/","Bicep curl":"https://www.strengthlog.com/dumbbell-curl/","Hammer curl":"https://www.strengthlog.com/hammer-curl/","Concentration curl":"https://www.strengthlog.com/concentration-curl/","Zottman curl":"https://www.strengthlog.com/zottman-curl/","Tricep kickback":"https://www.acefitness.org/resources/everyone/exercise-library/55/triceps-kickback/","Overhead tricep extension":"https://www.garagegymreviews.com/overhead-triceps-extension","Skull crusher":"https://www.strengthlog.com/dumbbell-lying-triceps-extension/","Tricep dip":"https://www.nasm.org/resource-center/exercise-library/bench-dips","Diamond push-up":"https://www.nike.com/a/diamond-push-ups-muscles-worked","Close-grip floor press":"https://sweat.com/exercises/floor-press-close-grip","Reverse curl":"https://www.strengthlog.com/reverse-dumbbell-curl/","Cross-body hammer curl":"https://exercise.com/exercises/cross-body-hammer-curl","Wrist curl":"https://www.strengthlog.com/dumbbell-wrist-curl/","Close-grip push-up":"https://www.strengthlog.com/close-grip-push-up/","Tate press":"https://barbend.com/tate-press/","Band bicep curl":"https://www.strengthlog.com/resistance-band-curl/","Tricep pushdown":"https://www.acefitness.org/resources/everyone/exercise-library/333/tricep-pressdown/","TRX bicep curl":"https://www.physitrack.com/exercise-library/how-to-perform-the-trx-bicep-curl-exercise","Cable curl":"https://www.strengthlog.com/cable-curl-with-bar/","Plank":"https://www.acefitness.org/resources/everyone/exercise-library/32/front-plank/","Side plank":"https://www.nasm.org/resource-center/exercise-library/side-plank","Dead bug":"https://www.nasm.org/resource-center/exercise-library/dead-bug","The Hundred":"https://powerpilates.com/learn/how-to-do-the-hundred-in-pilates","Teaser":"https://powerpilates.com/learn/how-to-do-a-teaser-in-pilates","Crunch":"https://www.acefitness.org/resources/everyone/exercise-library/52/crunch/","Bicycle crunch":"https://www.acefitness.org/resources/everyone/exercise-library/241/supine-bicycle-crunches/","Leg raise":"https://www.strengthlog.com/lying-leg-raise/","Mountain climbers":"https://www.acefitness.org/resources/everyone/exercise-library/258/mountain-climbers/","Single-leg stretch":"https://powerpilates.com/learn/how-to-do-a-single-leg-stretch-in-pilates","Russian twist":"https://www.strengthlog.com/russian-twist/","Hollow body hold":"https://barbend.com/hollow-hold","Side plank hip dip":"https://redefiningstrength.com/?p=29438","Bird dog":"https://www.acefitness.org/resources/everyone/exercise-library/14/bird-dog/","Toe taps":"https://howtomove.substack.com/p/a-great-core-strengthening-exercise","Stability ball crunch":"https://www.acefitness.org/resources/everyone/exercise-library/68/stability-ball-sit-ups-crunches/","Stability ball pike":"https://www.acefitness.org/resources/everyone/exercise-library/61/stability-ball-pikes/","Hanging knee raise":"https://www.strengthlog.com/hanging-knee-raise/","Medicine ball Russian twist":"https://www.acefitness.org/resources/everyone/exercise-library/47/seated-medicine-ball-trunk-rotations/","TRX mountain climber":"https://trxtraining.com/blogs/news/moves-of-the-week-trx-mountain-climbers","Goblet squat":"https://www.acefitness.org/resources/everyone/exercise-library/362/goblet-squat/","Sumo squat":"https://experiencelife.lifetime.life/article/break-it-down-the-sumo-squat/","Jump squat":"https://www.acefitness.org/resources/everyone/exercise-library/116/squat-jumps/","Bulgarian split squat":"https://www.acefitness.org/resources/everyone/exercise-library/366/bulgarian-split-squat/","Reverse lunge":"https://liftosaur.com/exercises/bodyweight-reverse-lunge","Walking lunge":"https://www.acefitness.org/resources/everyone/exercise-library/139/walking-lunges-with-twists/","Step-up":"https://www.acefitness.org/resources/everyone/exercise-library/28/step-up/","Calf raise":"https://www.acefitness.org/resources/everyone/exercise-library/73/standing-calf-raises-wall/","Wall sit":"https://www.physitrack.com/exercise-library/how-to-perform-the-wall-sit-exercise","Lateral lunge":"https://www.acefitness.org/resources/everyone/exercise-library/364/lateral-lunge/","Single-leg Romanian deadlift":"https://www.acefitness.org/resources/everyone/exercise-library/329/single-leg-romanian-deadlift/","Dumbbell front squat":"https://www.acefitness.org/resources/everyone/exercise-library/22/front-squat/","Hamstring walkout":"https://us.physitrack.com/home-exercise-video/hamstring-walkout","Single-leg calf raise":"https://us.physitrack.com/home-exercise-video/single-leg-calf-raise","TRX squat":"https://workoutlabs.com/exercise-guide/trx-suspension-straps-squats/","Box jump":"https://www.acefitness.org/resources/everyone/exercise-library/115/box-jumps/","Leg press":"https://www.acefitness.org/resources/everyone/exercise-library/154/seated-leg-press/","Leg extension":"https://www.uwo.ca/campusrec/orientation/equipment_guides/legs.html","Leg curl":"https://www.acefitness.org/resources/everyone/exercise-library/153/lying-hamstrings-curl/","Stability ball hamstring curl":"https://www.acefitness.org/resources/everyone/exercise-library/59/stability-ball-hamstring-curl/","Glute bridge":"https://www.acefitness.org/resources/everyone/exercise-library/49/glute-bridge/","Single-leg glute bridge":"https://www.acefitness.org/resources/everyone/exercise-library/145/glute-bridge-single-leg-progression/","Hip thrust":"https://www.strengthlog.com/hip-thrust/","Donkey kick":"https://www.healthline.com/health/fitness-exercise/donkey-kick","Fire hydrant":"https://www.healthline.com/health/exercise-fitness/fire-hydrant-exercise","Clamshell":"https://www.healthline.com/health/fitness-exercise/the-clamshell-exercise","Side-lying leg lift":"https://www.acefitness.org/resources/everyone/exercise-library/38/dips/","Curtsy lunge":"https://www.healthline.com/health/fitness-exercise/curtsy-lunge","Sumo deadlift":"https://www.garagegymreviews.com/sumo-deadlift","Kettlebell swing":"https://www.acefitness.org/acefit/exercise-library-details/0/391/","Frog pump":"https://www.strengthlog.com/frog-pumps/","Glute kickback":"https://www.garagegymreviews.com/glute-exercises-at-home","B-stance hip thrust":"https://motra.com/exercises/barbellBstanceHipThrust","Lateral walk":"https://www.garagegymreviews.com/lower-body-resistance-band-workout","Pilates side kick":"https://www.peakpilates.com/blogs/theteaser/exercise-spotlight-side-kick-series-setup","Banded glute bridge":"https://redefiningstrength.com/mini-band-glute-bridges/","Banded clamshell":"https://www.healthline.com/health/fitness-exercise/the-clamshell-exercise","Cable kickback":"https://www.coachweb.com/glute-exercises/9117/standing-glute-kick-back","Kettlebell deadlift":"https://www.nasm.org/resource-center/exercise-library/kettlebell-deadlift","Burpee":"https://www.nasm.org/resource-center/exercise-library/squat-thrust-burpees","Jumping jacks":"https://www.nasm.org/resource-center/exercise-library/jumping-jacks","High knees":"https://www.healthline.com/health/fitness/high-knees-benefits","Butt kicks":"https://www.healthline.com/health/exercise-fitness/butt-kicks","Squat jump":"https://www.acefitness.org/resources/everyone/exercise-library/116/squat-jumps/","Skaters":"https://www.garagegymreviews.com/plyometric-exercises","Jump lunge":"https://www.garagegymreviews.com/plyometric-exercises","Plank jack":"https://www.acefitness.org/resources/pros/expert-articles/4965/try-this-45-minute-boot-camp-workout/","Thruster":"https://www.garagegymreviews.com/thrusters-workout","Dumbbell snatch":"https://www.garagegymreviews.com/dumbbell-snatch","Inchworm":"https://www.acefitness.org/resources/everyone/exercise-library/254/inchworms/","Star jump":"https://www.topendsports.com/fitness/technique/star-jumps.htm","Shadow boxing":"https://www.garagegymreviews.com/boxing-stance","Jump rope":"https://www.garagegymreviews.com/how-to-jump-rope","Kettlebell clean":"https://www.garagegymreviews.com/kettlebell-clean","Turkish get-up":"https://www.acefitness.org/resources/everyone/exercise-library/388/turkish-get-up/","Medicine ball slam":"https://www.acefitness.org/resources/everyone/exercise-library/182/overhead-slams/","Wall ball":"https://www.garagegymreviews.com/wall-ball-workout","Bike sprint":"https://www.garagegymreviews.com/stationary-bike-workout-for-beginners","Rower sprint":"https://www.garagegymreviews.com/how-to-use-a-rowing-machine","Treadmill sprint":"https://barbend.com/treadmill-safety-tips/","Roll up":"https://powerpilates.com/learn/how-to-do-a-pilates-roll-up-properly","Single-leg circle":"https://www.powerpilates.com/learn/how-to-do-one-leg-circles-in-pilates","Rolling like a ball":"https://www.peakpilates.com/blogs/theteaser/movementofthemonth-rolling-like-a-ball","Double-leg stretch":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Criss-cross":"https://www.clubpilates.com/blog/5-pilates-moves-to-target-the-obliques","Spine stretch forward":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Saw":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Spine twist":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Side kick series":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Swimming":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Leg pull front":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Cat-cow":"https://www.acefitness.org/resources/everyone/exercise-library/15/cat-cow/","Child's pose":"https://www.acefitness.org/resources/everyone/exercise-library/227/childs-pose/","Downward dog":"https://www.acefitness.org/resources/everyone/exercise-library/18/downward-facing-dog/","Cobra stretch":"https://www.acefitness.org/resources/everyone/exercise-library/16/cobra/","Hip flexor stretch":"https://www.acefitness.org/resources/everyone/exercise-library/142/kneeling-hip-flexor-stretch/","World's greatest stretch":"https://www.garagegymreviews.com/best-glute-stretches","Thread the needle":"https://www.acefitness.org/resources/pros/expert-articles/7960/thoracic-mobility-exercises-to-address-shoulder-pain/","Thoracic rotation":"https://www.acefitness.org/resources/pros/expert-articles/5203/top-exercises-to-gain-thoracic-mobility/","Hamstring stretch":"https://www.acefitness.org/resources/everyone/exercise-library/235/supine-hamstrings-stretch/","Standing forward fold":"https://barbend.com/at-work-stretches/","Pigeon stretch":"https://www.garagegymreviews.com/best-glute-stretches","Spinal roll down":"https://www.pilatesanytime.com/workshop-view/2531/video/Pilates-Standing-Roll-Down-by-Diane-Severino","Shoulder rolls":"https://www.strengthlog.com/shoulder-stretches/","Hip circles":"https://www.health.harvard.edu/exercise-and-fitness/try-this-warm-up-for-walking-and-running","Side-lying open book":"https://www.acefitness.org/resources/pros/expert-articles/7960/thoracic-mobility-exercises-to-address-shoulder-pain/","Push-ups":"https://www.acefitness.org/resources/everyone/exercise-library/41/push-up/","Air squats":"https://www.acefitness.org/resources/everyone/exercise-library/135/bodyweight-squat/","Half-kneeling shoulder press":"https://functionalmovement.com/exercises/465/half_kneeling_single_arm_kb_press","Bent-over reverse fly":"https://www.garagegymreviews.com/reverse-fly-exercise","Bicep curl to overhead press":"https://www.exercise.com/exercises/bicep-curl-to-overhead-shoulder-press/","Floor fly":"https://barbend.com/dumbbell-flye-variations/","Deficit push-up":"https://www.garagegymreviews.com/dumbbell-triceps-workouts","Wide bent-over row":"https://www.garagegymreviews.com/bent-over-row-variations","Weighted swimming":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Weighted teaser":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Single-leg stretch to criss-cross":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-","Plank with dumbbell drag-through":"https://www.strengthlog.com/kettlebell-plank-pull-through/","Side plank reach-under":"https://motra.com/exercises/sidePlankReachUnder","Weighted dead bug":"https://www.strengthlog.com/dead-bugs-with-dumbbells/","Side-lying leg series":"https://www.pilatesanytime.com/blog/mat/the-34-pilates-mat-exercises-"};
+const setupFor=name=>{const s=SETUP[name];return s?{steps:s,src:new URL(SETUP_SRC[name]).hostname.replace(/^www\./,'')}:null};
 function tutStop(){cancelAnimationFrame(tutRAF);tutRAF=0;const box=document.getElementById('tut');if(box)box.dataset.move=''}
 function renderRun(){
   const R=S.run,it=R.seq[R.idx];
@@ -1092,7 +1302,7 @@ function renderRun(){
     </div></div>
     <div class="progress-dots" id="dots"></div>
     <div class="focus" id="focus" hidden><div class="focus-map" id="focus-map"></div><div class="tut-t"><span class="eyebrow">Focus on</span><b id="focus-p"></b><small id="focus-s"></small><small id="focus-c" class="focus-c"></small><small id="focus-src" class="focus-src"></small></div></div>
-    <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small></div></div>
+    <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small><ol class="setup" id="tut-setup"></ol><small id="tut-src" class="focus-src"></small></div></div>
     <div class="next" id="next"></div>
     <div class="wt" id="wt" hidden><span class="wt-l"><span class="eyebrow">Dumbbell weight</span><b id="wt-n"></b></span><button type="button" class="wt-b" data-act="wtDec" aria-label="Decrease weight">−</button><input id="wt-in" class="num" inputmode="decimal" placeholder="–" aria-label="Weight in kilograms" autocomplete="off"><span class="wt-u">kg</span><button type="button" class="wt-b" data-act="wtInc" aria-label="Increase weight">+</button></div>
     <div class="run-extra"><button type="button" class="chip" data-act="addRest" id="addrest">+10s rest</button><button type="button" class="chip" data-act="restartEx" id="restartex">↺ Restart exercise</button></div>
@@ -1131,7 +1341,8 @@ function paintRun(full){
        if(!R.tipSet.tips.length)document.getElementById('focus-c').textContent=MOVES[moveFor(it.label)].cue}
      if(!on)fc.dataset.ex=''}
     const showTut=it.kind!=='work'&&!!it.next,tut=document.getElementById('tut');tut.hidden=!showTut;
-    if(showTut){const n=it.next;document.getElementById('tut-e').textContent=['Up next',fmt(n.dur),n.reps?repsTxt(n.reps):''].filter(Boolean).join(' · ');document.getElementById('tut-n').textContent=n.label;document.getElementById('tut-c').textContent=MOVES[moveFor(n.label)].cue;tutStart(n.label)}else tutStop();
+    if(showTut){const n=it.next;document.getElementById('tut-e').textContent=`Up next · ${fmt(n.dur)}`;document.getElementById('tut-n').textContent=n.label;{const su=setupFor(n.label);document.getElementById('tut-c').textContent=su?'Set up':MOVES[moveFor(n.label)].cue;document.getElementById('tut-c').classList.toggle('setup-h',!!su);
+      document.getElementById('tut-setup').innerHTML=su?su.steps.map(x=>`<li>${esc(x)}</li>`).join(''):'';document.getElementById('tut-src').textContent=su?`Setup: ${su.src}`:''}tutStart(n.label)}else tutStop();
     document.getElementById('addrest').hidden=it.kind==='work';document.getElementById('restartex').hidden=it.kind!=='work';
     const nx=document.getElementById('next');nx.hidden=showTut;nx.innerHTML=it.next?`Next <b>${esc(it.next.label)}</b>${it.next.reps?` · ${esc(repsTxt(it.next.reps))}`:''} · ${fmt(it.next.dur)}`:(it.kind==='work'?'Last interval':'');
     document.getElementById('pausebtn').innerHTML=R.paused?I.play:I.pause;document.getElementById('pausebtn').setAttribute('aria-label',R.paused?'Resume':'Pause');

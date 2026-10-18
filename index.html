@@ -55,6 +55,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .text-btn{color:var(--accent);font-weight:600;padding:8px 4px}
 .scroll{flex:1;min-height:0;overflow-y:auto;padding-block:4px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+.scroll>*{flex-shrink:0}
 .actionbar{padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-top:1px solid var(--line);background:var(--bg);display:flex;gap:10px}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:14px 20px;font-weight:600;font-size:15px;background:var(--surface-2);color:var(--fg);flex:1;min-width:0;transition:transform .08s ease}
@@ -103,12 +104,12 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .row:first-child{border-top:0}
 .row .lbl{flex:1;min-width:0}
 .row .lbl b{display:block;font-weight:500}
-.row .lbl small{color:var(--muted);font-size:12.5px}
-.stepper{display:inline-flex;align-items:center;gap:2px;background:var(--surface-2);border-radius:999px;padding:3px}
+.row .lbl small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:2px}
+.stepper{display:inline-flex;align-items:center;gap:2px;flex:none;background:var(--surface-2);border-radius:999px;padding:3px}
 .stepper button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--fg)}
 .stepper button:hover{background:var(--surface)}
-.stepper .val{min-width:64px;text-align:center;font-weight:600;font-size:15px;background:transparent;border:0;padding:0}
-.stepper .val.narrow{min-width:40px}
+.stepper .val{width:64px;min-width:0;text-align:center;font-weight:600;font-size:15px;background:transparent;border:0;padding:0}
+.stepper .val.narrow{width:40px}
 .phase-swatch{width:4px;align-self:stretch;border-radius:2px;flex:none;margin-left:-4px}
 .text-field{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:10px;padding:11px 12px;font-size:15px}
 .text-field:focus{border-color:var(--accent);outline:0;background:var(--surface)}

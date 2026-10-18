@@ -269,7 +269,9 @@ function summaryLine(w){const n=w.exercises.length;const e=n===1&&w.exercises[0]
 let actx=null;
 function ac(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(actx&&actx.state==='suspended')actx.resume();return actx}
 function tone(freq,dur,when=0,vol=.25){const c=ac();if(!c||!settings.sound)return;const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0,c.currentTime+when);g.gain.linearRampToValueAtTime(vol,c.currentTime+when+.01);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+when+dur);o.connect(g).connect(c.destination);o.start(c.currentTime+when);o.stop(c.currentTime+when+dur+.02)}
-const beepShort=()=>tone(880,.12);
+// Cute cartoon "beep beep": two quick chirps that bend up in pitch, softened with a triangle wave.
+function chirp(freq,dur,when=0,vol=.22){const c=ac();if(!c||!settings.sound)return;const t=c.currentTime+when,o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.setValueAtTime(freq*.85,t);o.frequency.exponentialRampToValueAtTime(freq*1.12,t+dur*.6);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.setValueAtTime(vol,t+dur*.55);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.02)}
+const beepShort=(sec=3)=>{const f=sec===1?1568:1175;chirp(f,.075);chirp(f,.075,.11)};
 const beepWork=()=>{tone(1047,.16);tone(1319,.22,.17)};
 const beepRest=()=>tone(660,.35);
 const beepDone=()=>{tone(784,.18);tone(988,.18,.2);tone(1175,.4,.4)};
@@ -418,7 +420,7 @@ function tick(){
   const R=S.run;if(!R||R.paused)return;
   const now=Date.now();R.remain=R.endAt-now;
   const sec=Math.ceil(R.remain/1000);
-  if(settings.countdown&&sec!==R.lastSec&&sec>=1&&sec<=3&&R.seq[R.idx].dur>3){beepShort()}
+  if(settings.countdown&&sec!==R.lastSec&&sec>=1&&sec<=3&&R.seq[R.idx].dur>3){beepShort(sec)}
   R.lastSec=sec;
   if(R.remain<=0){
     if(R.idx+1>=R.seq.length){finishRun(true);return}
@@ -499,7 +501,7 @@ function renderSheet(){
     <div class="grab"></div><h2 style="font-size:17px;font-weight:600">Cues</h2>
     <div class="card rows">
       <div class="row"><span class="lbl"><b>Sound</b><small>Beeps at every transition</small></span><button class="toggle" role="switch" aria-checked="${settings.sound}" data-set="sound" aria-label="Sound"></button></div>
-      <div class="row"><span class="lbl"><b>3-2-1 countdown</b><small>Short beeps before each change</small></span><button class="toggle" role="switch" aria-checked="${settings.countdown}" data-set="countdown" aria-label="Countdown"></button></div>
+      <div class="row"><span class="lbl"><b>3-2-1 countdown</b><small>A cute beep beep before each change</small></span><button class="toggle" role="switch" aria-checked="${settings.countdown}" data-set="countdown" aria-label="Countdown"></button></div>
       <div class="row"><span class="lbl"><b>Voice</b><small>Speaks exercise, reps and what's next</small></span><button class="toggle" role="switch" aria-checked="${settings.voice}" data-set="voice" aria-label="Voice"></button></div>
       ${VOICES.length?`<div class="row"><span class="lbl"><b>Voice tone</b><small>${VOICES.length} English voices on this device</small></span></div>
       <div class="row" style="padding-top:0;min-height:0;gap:8px"><select class="text-field" id="f-voice" data-voice style="flex:1;min-width:0">${VOICES.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a)).map(v=>`<option value="${esc(v.voiceURI)}" ${pickVoice()&&pickVoice().voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}${/natural|neural|premium|enhanced|siri/i.test(v.name)?' ★':''}</option>`).join('')}</select><button class="btn" data-act="previewVoice" style="flex:0 0 auto;padding:10px 16px">Preview</button></div>`:''}

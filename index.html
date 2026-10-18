@@ -1043,7 +1043,7 @@ app.addEventListener('click',e=>{
     case 'savePreset':savePreset();break;
     case 'deletePreset':presets=presets.filter(p=>p.id!==S.editingId);store.set('cadence.presets',presets);S.screen='home';S.editingId=null;toast('Deleted');render();break;
     case 'start':startRun(JSON.parse(JSON.stringify(S.draft)));break;
-    case 'pause':togglePause();break;
+    case 'pause':if(S.run)S.run.autoPaused=false;togglePause();break;
     case 'addRest':addRest();break;
     case 'wtInc':case 'wtDec':{const R=S.run,ex=document.getElementById('wt').dataset.ex;if(!R||!ex)break;const cur=typeof R.weights[ex]==='number'?R.weights[ex]:0;R.weights[ex]=Math.max(0,cur+(a==='wtInc'?1:-1));document.getElementById('wt-in').value=+R.weights[ex].toFixed(1);break}
     case 'progress':S.prog={ex:null};renderProgress();break;
@@ -1059,6 +1059,9 @@ app.addEventListener('click',e=>{
 });
 const isExName=el=>el&&el.matches&&el.matches('.ex-head input[data-text]');
 app.addEventListener('focusin',e=>{if(isExName(e.target))showSuggest(e.target)});
+// Typing a weight during a rest pauses the timer; dismissing the keyboard (blur) resumes it, unless the user paused it themselves.
+app.addEventListener('focusin',e=>{const R=S.run;if(e.target.id==='wt-in'&&R&&!R.paused){togglePause();R.autoPaused=true}});
+app.addEventListener('focusout',e=>{const R=S.run;if(e.target.id==='wt-in'&&R&&R.autoPaused){R.autoPaused=false;if(R.paused)togglePause()}});
 app.addEventListener('focusout',e=>{if(isExName(e.target))setTimeout(()=>{if(!isExName(document.activeElement))closeSuggest()},250)});
 app.addEventListener('input',e=>{const inp=e.target;
   if(inp.id==='wt-in'&&S.run){const ex=document.getElementById('wt').dataset.ex,v=parseFloat(inp.value.replace(',','.'));if(ex)S.run.weights[ex]=isNaN(v)?null:Math.max(0,v);return}

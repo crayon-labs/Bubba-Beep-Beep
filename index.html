@@ -283,12 +283,13 @@ const beepDone=()=>{tone(784,.18);tone(988,.18,.2);tone(1175,.4,.4)};
 let VOICES=[];
 function loadVoices(){try{VOICES=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang))}catch(e){VOICES=[]}}
 if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=()=>{loadVoices();if(S.sheet)renderSheet()}}
-function scoreVoice(v){const n=v.name.toLowerCase();let s=0;if(/natural|neural|premium|enhanced|siri/.test(n))s+=50;if(/samantha|ava|allison|zoe|karen|moira|serena|daniel|aria|jenny|libby|sonia|google (uk|us)/.test(n))s+=30;if(/google/.test(n))s+=10;if(/compact|eloquence|fred|zarvox|whisper|bells|cellos|trinoids|albert|junior|bahh|boing|bubbles|deranged|hysterical|organ|ralph|good news|bad news/.test(n))s-=60;if(v.default)s+=5;return s}
+// Favour natural-sounding, warm female voices (cuter than the default male ones); push novelty and robotic voices to the bottom.
+function scoreVoice(v){const n=v.name.toLowerCase();let s=0;if(/natural|neural|premium|enhanced|siri/.test(n))s+=50;if(/\b(samantha|ava|allison|zoe|karen|moira|tessa|serena|aria|jenny|libby|sonia|emma|michelle|nicky|kathy|victoria|susan|fiona|catherine|zira|hazel|clara|natasha|female)\b/.test(n))s+=40;if(/\b(daniel|alex|fred|tom|aaron|arthur|gordon|oliver|rishi|lee|evan|nathan|guy|davis|mark|david|george|ryan|william|male)\b/.test(n))s-=40;if(/google/.test(n))s+=10;if(/compact|eloquence|zarvox|whisper|bells|cellos|trinoids|albert|junior|bahh|boing|bubbles|deranged|hysterical|organ|ralph|good news|bad news|\b(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley)\b/.test(n))s-=60;if(v.default)s+=5;return s}
 function pickVoice(){if(settings.voiceURI){const v=VOICES.find(x=>x.voiceURI===settings.voiceURI);if(v)return v}return VOICES.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a))[0]||null}
 // Endearing lines: the nickname's first vowel is drawn out ("Bubba" -> "Buuubba") and spoken a touch higher and slower.
 const aww=()=>settings.nick.replace(/[aeiou]/i,v=>v+v+v);
-const SWEET={pitch:1.2,rate:0.85};
-function say(text,force,o){if((!settings.voice&&!force)||!('speechSynthesis' in window))return false;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const v=pickVoice();if(v)u.voice=v;u.rate=(o&&o.rate)||0.95;u.pitch=(o&&o.pitch)||1;u.volume=1;speechSynthesis.speak(u);return true}catch(e){return false}}
+const SWEET={pitch:1.3,rate:0.88};
+function say(text,force,o){if((!settings.voice&&!force)||!('speechSynthesis' in window))return false;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const v=pickVoice();if(v)u.voice=v;u.rate=(o&&o.rate)||1;u.pitch=(o&&o.pitch)||1.15;u.volume=1;speechSynthesis.speak(u);return true}catch(e){return false}}
 const NUMW=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
 const spokenNum=n=>NUMW[n]||String(n);
 

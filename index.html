@@ -179,6 +179,9 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .ring .sub{color:var(--muted);font-size:14px;margin-top:4px}
 .next{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:14px;min-height:22px}
 .next[hidden]{display:none}
+.run-extra{display:flex;justify-content:center;gap:8px;min-height:36px;flex:none}
+.run-extra .chip{font-size:14px;padding:8px 16px;font-weight:600}
+.run-extra [hidden]{display:none}
 .tut{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 14px 8px 8px;flex:none}
 .tut[hidden]{display:none}
 .tut svg{width:140px;height:116px;flex:none}
@@ -589,7 +592,7 @@ function startRun(w){
 function beginInterval(i,first){
   const R=S.run;R.idx=i;const it=R.seq[i];R.endAt=Date.now()+it.dur*1000;R.remain=it.dur*1000;
   // Countdown beeps step down 3, 2, 1, once each per interval.
-  cancelBeeps();R.nextBeep=3;R.cheered=false;
+  cancelBeeps();R.nextBeep=3;R.cheered=false;if(document.hidden)runNotify();
   if(it.kind==='work'){beepWork();const parts=[it.label+'.'];if(it.reps)parts.push(/^\d+$/.test(it.reps)?`${spokenNum(+it.reps)} reps.`:`${it.reps}.`);if(it.sets>1)parts.push(`Set ${spokenNum(it.set)} of ${spokenNum(it.sets)}.`);if(!it.next)parts.push(pick([`Last one, ${settings.nick}. Make it count.`,`Final interval. You're incredible.`]));else if(Math.random()<0.3)parts.push(pick([`Go ${settings.nick}, go.`,`You've got this.`,`Looking strong.`,`Beep beep.`]));say(parts.join(' '))}
   else if(it.kind==='prep'){if(!first)beepRest();say(`${aww()}, let's get ready!`,false,SWEET)}
   else{beepRest();const nx=it.next&&it.dur>=8?` Next up, ${it.next.label}.`:'';say((it.kind==='round'?pick([`Round ${spokenNum(it.round)} done. ${settings.nick}, you're a machine.`,`That's round ${spokenNum(it.round)}. Breathe. Drink water. Flex a little.`]):pick(['Rest.',`Rest, ${settings.nick}.`,'Breathe.','Shake it out.']))+nx)}
@@ -604,16 +607,35 @@ function tick(){
   if(settings.countdown&&R.seq[R.idx].dur>3){while(R.nextBeep>=1&&R.remain-R.nextBeep*1000<-40)R.nextBeep--;
     const b=R.nextBeep,ahead=R.remain-b*1000;if(b>=1&&ahead<=250){beepAt(b,Math.max(0,ahead)/1000);R.nextBeep=b-1}}
   if(R.remain<=0){
-    if(R.idx+1>=R.seq.length){finishRun(true);return}
-    // carry overshoot so drift doesn't accumulate
-    const over=-R.remain;beginInterval(R.idx+1);R.endAt-=over;
+    // Carry overshoot so drift doesn't accumulate. After time in the background, intervals that fully elapsed are
+    // skipped silently so only the current one is announced.
+    let over=-R.remain,i=R.idx+1;
+    while(i<R.seq.length&&over>=R.seq[i].dur*1000){over-=R.seq[i].dur*1000;i++}
+    if(i>=R.seq.length){finishRun(true);return}
+    beginInterval(i);R.endAt-=over;if(over>2000)R.cheered=true;
   }
   paintRun();
 }
+// Background notification: when the user leaves mid-workout, show what's running and the clock time it ends.
+// iOS freezes the page in the background, so the text uses an end time rather than a live countdown. Where the page
+// keeps running (e.g. Android), it's refreshed at each interval change. Requires settings.notify and permission.
+const NOTE_TAG='bubba-run';
+const clockAt=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit',second:'2-digit'});
+function runNotify(){
+  const R=S.run;if(!R||!settings.notify||!('Notification' in window)||Notification.permission!=='granted'||!navigator.serviceWorker)return;
+  const it=R.seq[R.idx],phase=it.kind==='work'?it.label:(it.kind==='prep'?'Get ready':(it.kind==='round'?'Round break':'Rest'));
+  const body=R.paused?`Paused with ${fmt(Math.ceil(R.remain/1000))} left`:`Ends at ${clockAt(R.endAt)}${it.next?` · Next: ${it.next.label}`:' · Last one!'}`;
+  navigator.serviceWorker.ready.then(reg=>reg.showNotification(`${phase} · ${R.w.name||'Quick timer'}`,{body,tag:NOTE_TAG,icon:'icon-192.png',badge:'icon-192.png',silent:true,renotify:false})).catch(()=>{});
+}
+function clearNotify(){if(navigator.serviceWorker)navigator.serviceWorker.ready.then(reg=>reg.getNotifications({tag:NOTE_TAG})).then(ns=>ns&&ns.forEach(n=>n.close())).catch(()=>{})}
+// Rest extension and exercise restart from the run screen.
+function addRest(){const R=S.run;if(!R)return;const it=R.seq[R.idx];if(it.kind==='work')return;it.dur+=10;if(R.paused)R.remain+=10000;else R.endAt+=10000;R.remain=R.paused?R.remain:R.endAt-Date.now();
+  if(R.remain>3000){cancelBeeps();R.nextBeep=3}paintRun(true);if(document.hidden)runNotify()}
+function restartEx(){const R=S.run;if(!R)return;skip(0)}
 function togglePause(){const R=S.run;if(!R)return;if(R.paused){R.endAt=Date.now()+R.remain;R.paused=false;ac()}else{R.remain=R.endAt-Date.now();R.paused=true;{const due=actx&&(R.pend||[]).some(x=>x.at>actx.currentTime);cancelBeeps();if(due)R.nextBeep++}try{speechSynthesis.cancel()}catch(e){}}paintRun(true)}
 function skip(d){const R=S.run;if(!R)return;const n=R.idx+d;if(n<0)return;if(n>=R.seq.length){finishRun(true);return}beginInterval(n);if(R.paused){R.remain=R.seq[n].dur*1000}paintRun(true)}
 function finishRun(completed){
-  const R=S.run;if(!R)return;clearInterval(R.timer);unlockScreen();cancelBeeps();try{speechSynthesis.cancel()}catch(e){}
+  const R=S.run;if(!R)return;clearInterval(R.timer);unlockScreen();cancelBeeps();clearNotify();try{speechSynthesis.cancel()}catch(e){}
   const elapsed=Math.round((Date.now()-R.startedAt)/1000);
   const done=completed?R.seq.length:R.idx;
   const entry={id:uid(),name:R.w.name||'Quick timer',color:R.color,at:Date.now(),duration:elapsed,intervals:done,total:R.seq.length,completed,planned:total(R.seq),work:R.seq.filter((x,i)=>x.kind==='work'&&(completed||i<R.idx)).length};
@@ -800,6 +822,7 @@ function renderRun(){
     <div class="progress-dots" id="dots"></div>
     <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small></div></div>
     <div class="next" id="next"></div>
+    <div class="run-extra"><button type="button" class="chip" data-act="addRest" id="addrest">+10s rest</button><button type="button" class="chip" data-act="restartEx" id="restartex">↺ Restart exercise</button></div>
     <div class="controls"><button class="ctl" data-act="prev" aria-label="Previous interval">${I.prev}</button><button class="ctl big" data-act="pause" id="pausebtn" aria-label="Pause">${I.pause}</button><button class="ctl" data-act="skip" aria-label="Skip interval">${I.skip}</button></div>
     <div class="run-foot"><span>${esc(R.w.name||'Quick timer')}</span><button data-act="end">End workout</button></div>
   </div>`;
@@ -821,6 +844,7 @@ function paintRun(full){
     // During rests, demo the next move with a looping figure and a form cue.
     const showTut=it.kind!=='work'&&!!it.next,tut=document.getElementById('tut');tut.hidden=!showTut;
     if(showTut){const n=it.next;document.getElementById('tut-e').textContent=['Up next',fmt(n.dur),n.reps?repsTxt(n.reps):''].filter(Boolean).join(' · ');document.getElementById('tut-n').textContent=n.label;document.getElementById('tut-c').textContent=MOVES[moveFor(n.label)].cue;tutStart(n.label)}else tutStop();
+    document.getElementById('addrest').hidden=it.kind==='work';document.getElementById('restartex').hidden=it.kind!=='work';
     const nx=document.getElementById('next');nx.hidden=showTut;nx.innerHTML=it.next?`Next <b>${esc(it.next.label)}</b>${it.next.reps?` · ${esc(repsTxt(it.next.reps))}`:''} · ${fmt(it.next.dur)}`:(it.kind==='work'?'Last interval':'');
     document.getElementById('pausebtn').innerHTML=R.paused?I.play:I.pause;document.getElementById('pausebtn').setAttribute('aria-label',R.paused?'Resume':'Pause');
     const works=R.seq.map((x,i)=>({x,i})).filter(o=>o.x.kind==='work');
@@ -853,6 +877,7 @@ function renderSheet(){
     <div class="card rows">
       <div class="row"><span class="lbl"><b>Sound</b><small>Beeps at every transition</small></span><button class="toggle" role="switch" aria-checked="${settings.sound}" data-set="sound" aria-label="Sound"></button></div>
       <div class="row"><span class="lbl"><b>Sound on silent</b><small>Beeps even with the silent switch on, but pauses Spotify and other music</small></span><button class="toggle" role="switch" aria-checked="${!!settings.loud}" data-set="loud" aria-label="Sound on silent"></button></div>
+      <div class="row"><span class="lbl"><b>Notification when you leave</b><small>Shows the current step and when it ends if you switch apps mid-workout. On iPhone, add the app to your Home Screen first.</small></span><button class="toggle" role="switch" aria-checked="${!!settings.notify}" data-set="notify" aria-label="Notification when you leave"></button></div>
       <div class="row"><span class="lbl"><b>3-2-1 countdown</b><small>Says “beep” on each of the last 3 seconds</small></span><button class="toggle" role="switch" aria-checked="${settings.countdown}" data-set="countdown" aria-label="Countdown"></button></div>
       <div class="row"><span class="lbl"><b>Voice</b><small>Speaks exercise, reps and what's next</small></span><button class="toggle" role="switch" aria-checked="${settings.voice}" data-set="voice" aria-label="Voice"></button></div>
       ${VOICES.length?`<div class="row" style="padding-bottom:8px"><span class="lbl"><b>Voice tone</b><small>${VOICES.length} English voices on this device</small></span></div>
@@ -914,6 +939,8 @@ app.addEventListener('click',e=>{
     case 'deletePreset':presets=presets.filter(p=>p.id!==S.editingId);store.set('cadence.presets',presets);S.screen='home';S.editingId=null;toast('Deleted');render();break;
     case 'start':startRun(JSON.parse(JSON.stringify(S.draft)));break;
     case 'pause':togglePause();break;
+    case 'addRest':addRest();break;
+    case 'restartEx':restartEx();break;
     case 'skip':skip(1);break;
     case 'prev':skip(-1);break;
     case 'end':finishRun(false);break;
@@ -948,11 +975,14 @@ layer.addEventListener('click',e=>{
     if(la){addFromLib(la.dataset.libadd);return}
     if(e.target.closest('.lib-head [data-act="closeLib"]')||e.target.matches('.sheet[data-act="closeLib"]')){S.lib=null;renderLib()}
     return}
-  const sw=e.target.closest('[data-set]');if(sw){settings[sw.dataset.set]=!settings[sw.dataset.set];store.set('cadence.settings',settings);if(sw.dataset.set==='loud')setSession();renderSheet();return}
+  const sw=e.target.closest('[data-set]');if(sw){settings[sw.dataset.set]=!settings[sw.dataset.set];store.set('cadence.settings',settings);if(sw.dataset.set==='loud')setSession();
+    if(sw.dataset.set==='notify'&&settings.notify){if(!('Notification' in window)){settings.notify=false;store.set('cadence.settings',settings);toast('Add the app to your Home Screen to allow notifications')}
+      else Notification.requestPermission().then(r=>{if(r!=='granted'){settings.notify=false;store.set('cadence.settings',settings);toast('Notifications are blocked in your settings');renderSheet()}}).catch(()=>{})}
+    renderSheet();return}
   if(e.target.closest('[data-act="previewVoice"]')){say(`Push-ups. Twelve reps. Set two of three. Go ${settings.nick}, go.`,true);return}
   if(e.target.closest('[data-act="closeSheet"]')&&!e.target.closest('[data-stop]')||e.target.closest('.panel [data-act="closeSheet"]')){S.sheet=false;renderSheet()}
 });
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.run&&!S.run.paused)lockScreen()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){clearNotify();if(S.run){if(!S.run.paused)lockScreen();tick();paintRun(true)}}else if(S.run)runNotify()});
 document.addEventListener('keydown',e=>{if(S.screen!=='run')return;if(e.code==='Space'){e.preventDefault();togglePause()}if(e.key==='ArrowRight')skip(1);if(e.key==='ArrowLeft')skip(-1)});
 
 render();

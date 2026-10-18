@@ -205,6 +205,9 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .lib-row svg{width:64px;height:54px;flex:none;background:var(--surface-2);border-radius:10px;padding:4px}
 .lib-n{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .lib-n b{font-weight:600}
+.eq-tag{font-size:11.5px;font-weight:600;color:var(--accent)}
+.lib-hidden{padding:8px 0}
+.eq-set .chip{font-size:13.5px}
 .lib-n small{color:var(--muted);font-size:12.5px;line-height:1.35}
 .tut-t{min-width:0;display:flex;flex-direction:column;gap:2px}
 .tut-t b{font-weight:600;font-size:16px;line-height:1.25;overflow-wrap:break-word}
@@ -233,7 +236,8 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 
 /* Settings sheet */
 .sheet{position:fixed;inset:0;background:rgba(10,14,10,.35);display:grid;grid-template-columns:minmax(0,1fr);place-items:end center;z-index:20}
-.sheet .panel{width:100%;max-width:520px;background:var(--surface);border-radius:20px 20px 0 0;padding-block:12px calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px}
+.sheet .panel{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:var(--surface);border-radius:20px 20px 0 0;padding-block:12px calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px}
+.sheet .panel>:not(.lib-list){flex-shrink:0}
 .sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto}
 .toggle{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .15s}
 .toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
@@ -339,7 +343,7 @@ if(!store.get('cadence.mig8',false)){const L={'heavy, 3s lower':'heavy, take 3 s
 {const seen=store.get('cadence.seedIds',['tabata','fullbody','strength']);const fresh=SEED.filter(p=>!seen.includes(p.id)&&!presets.some(x=>x.id===p.id));
  if(fresh.length){presets=presets.concat(fresh);store.set('cadence.presets',presets)}store.set('cadence.seedIds',SEED.map(p=>p.id).concat(RETIRED))}
 let history=store.get('cadence.history',[]);
-let settings=Object.assign({sound:true,voice:true,countdown:true,nick:'Bubba'},store.get('cadence.settings',{}));
+let settings=Object.assign({sound:true,voice:true,countdown:true,nick:'Bubba',equip:['db','kb','barbell','band','trx','bench','box','bar','ball','mb','rope','cable','machine','cardio']},store.get('cadence.settings',{}));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 function greeting(){const h=new Date().getHours();const n=history.length;if(n&&Date.now()-history[0].at<864e5)return pick(['Back already? Love that.','Two in one day. Show-off.','Legs still work? Good.']);return h<11?pick(['Morning beeps await.','Coffee first, then squats.']):h<17?pick(['Ready to beep?','Your timer missed you.']):pick(['Evening sweat session?','One round. Then dinner.'])}
 
@@ -631,7 +635,7 @@ const MOVES={
   march:{a:'80 25 80 34 76 46 74 58 80 58 96 62 94 79 84 46 92 38 80 75 80 92',b:'80 25 80 34 84 46 92 38 80 58 80 75 80 92 76 46 74 58 96 62 94 79',t:1000,cue:'Stay light and keep breathing'}
 };
 // First match wins, so specific names come before general ones.
-const MOVE_RULES=[[/side plank/,'sideplank'],[/burpee/,'burpee'],[/jumping jack|star jump/,'jack'],[/thruster/,'thruster'],[/shadow box|punch/,'punch'],[/roll.?up/,'rollup'],[/roll down|forward fold/,'hinge'],[/rolling like a ball|rocker/,'roll'],[/spine stretch|\bsaw\b|hamstring stretch/,'spinestretch'],[/cat.?cow|thread the needle/,'catcow'],[/child|pigeon/,'child'],[/down(ward)? dog/,'downdog'],[/swan|cobra|back extension/,'swan'],[/bird ?dog/,'birddog'],[/farmer|carry/,'carry'],[/upright row/,'upright'],[/twist|thoracic/,'twist'],[/skater|lateral lunge|side lunge|lateral walk/,'sidelunge'],[/hip flexor|world.?s greatest/,'split'],[/snatch/,'swing'],[/inchworm/,'pushup'],[/hollow/,'hundred'],[/toe tap/,'deadbug'],[/snow angel/,'swim'],[/walkout/,'bridge'],[/glute kickback/,'donkey'],[/side kick/,'sidelying'],[/leg pull/,'plank'],[/leg circle|corkscrew/,'legraise'],[/shoulder roll/,'shrug'],[/around the world/,'lateralraise'],[/halo/,'press'],[/tate|hex press/,'floorpress'],[/overhead (tricep )?extension|tricep extension|skull/,'triext'],[/\bdips?\b/,'dip'],[/lateral raise|y raise/,'lateralraise'],[/front raise/,'frontraise'],[/shrug/,'shrug'],[/calf/,'calfraise'],[/donkey|fire hydrant/,'donkey'],[/leg raise|leg lower/,'legraise'],[/incline.*press|close.?grip (floor |bench )?press/,'floorpress'],[/step.?up/,'split'],[/frog/,'bridge'],[/wall sit/,'squat'],[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank'],[/crunch/,'crunch']];
+const MOVE_RULES=[[/side plank/,'sideplank'],[/leg press|leg extension|box jump/,'squat'],[/leg curl|hamstring curl/,'bridge'],[/pushdown/,'curl'],[/pull.?apart|cable fly|y fly/,'lateralraise'],[/pulldown|pull.?up|chin.?up/,'press'],[/face pull/,'upright'],[/ball pike|trx pike/,'downdog'],[/hanging/,'march'],[/clean/,'swing'],[/get.?up/,'rollup'],[/slam|wall ball/,'thruster'],[/burpee/,'burpee'],[/jumping jack|star jump/,'jack'],[/thruster/,'thruster'],[/shadow box|punch/,'punch'],[/roll.?up/,'rollup'],[/roll down|forward fold/,'hinge'],[/rolling like a ball|rocker/,'roll'],[/spine stretch|\bsaw\b|hamstring stretch/,'spinestretch'],[/cat.?cow|thread the needle/,'catcow'],[/child|pigeon/,'child'],[/down(ward)? dog/,'downdog'],[/swan|cobra|back extension/,'swan'],[/bird ?dog/,'birddog'],[/farmer|carry/,'carry'],[/upright row/,'upright'],[/twist|thoracic/,'twist'],[/skater|lateral lunge|side lunge|lateral walk/,'sidelunge'],[/hip flexor|world.?s greatest/,'split'],[/snatch/,'swing'],[/inchworm/,'pushup'],[/hollow/,'hundred'],[/toe tap/,'deadbug'],[/snow angel/,'swim'],[/walkout/,'bridge'],[/glute kickback|cable kickback/,'donkey'],[/side kick/,'sidelying'],[/leg pull/,'plank'],[/leg circle|corkscrew/,'legraise'],[/shoulder roll/,'shrug'],[/around the world/,'lateralraise'],[/halo/,'press'],[/tate|hex press/,'floorpress'],[/overhead (tricep )?extension|tricep extension|skull/,'triext'],[/\bdips?\b/,'dip'],[/lateral raise|y raise/,'lateralraise'],[/front raise/,'frontraise'],[/shrug/,'shrug'],[/calf/,'calfraise'],[/donkey|fire hydrant/,'donkey'],[/leg raise|leg lower/,'legraise'],[/incline.*press|close.?grip (floor |bench )?press/,'floorpress'],[/step.?up/,'split'],[/frog/,'bridge'],[/wall sit/,'squat'],[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank'],[/crunch/,'crunch']];
 // Plain numbers read as "12 reps"; descriptive labels like "left, then right" show as written.
 const repsTxt=r=>/^\d+$/.test(r)?`${r} reps`:r;
 function moveFor(name){const n=(name||'').toLowerCase();const r=MOVE_RULES.find(([re])=>re.test(n));return r?r[1]:'march'}
@@ -672,21 +676,44 @@ function tutStart(name){
   tutRAF=requestAnimationFrame(frame);
 }
 // ---------- exercise library ----------
-// Fifteen common exercises per body part, plus full-body cardio, Pilates mat and mobility; each maps to a move above for its picture and cue.
+// Fifteen common exercises per body part (plus equipment-specific ones), full-body cardio, Pilates mat and mobility; each maps to a move above for its picture and cue.
 const LIB={
-  Chest:['Push-up','Wide push-up','Incline push-up','Decline push-up','Dumbbell bench press','Incline dumbbell press','Dumbbell floor press','Dumbbell fly','Squeeze press','Dumbbell pullover','Pilates push-up','Archer push-up','Staggered push-up','Single-arm floor press','Hex press'],
-  Back:['Bent-over row','Single-arm row','Renegade row','Reverse fly','Superman','Pilates swimming','Romanian deadlift','Dumbbell deadlift','Dumbbell shrug','Good morning','Tripod row','Chest-supported row','Swan','Reverse snow angel',"Farmer's carry"],
-  Shoulders:['Overhead press','Arnold press','Lateral raise','Front raise','Rear delt fly','Pike push-up','Push press','Y raise','Plank shoulder tap','Half-kneeling press','Upright row','Seated dumbbell press','Around the world','Dumbbell halo','Bear plank hold'],
-  Arms:['Bicep curl','Hammer curl','Concentration curl','Zottman curl','Tricep kickback','Overhead tricep extension','Skull crusher','Tricep dip','Diamond push-up','Close-grip floor press','Reverse curl','Cross-body hammer curl','Wrist curl','Close-grip push-up','Tate press'],
-  Core:['Plank','Side plank','Dead bug','The Hundred','Teaser','Crunch','Bicycle crunch','Leg raise','Mountain climbers','Single-leg stretch','Russian twist','Hollow body hold','Side plank hip dip','Bird dog','Toe taps'],
-  Legs:['Goblet squat','Sumo squat','Jump squat','Bulgarian split squat','Reverse lunge','Walking lunge','Step-up','Romanian deadlift','Calf raise','Wall sit','Lateral lunge','Single-leg Romanian deadlift','Dumbbell front squat','Hamstring walkout','Single-leg calf raise'],
-  Glutes:['Glute bridge','Single-leg glute bridge','Hip thrust','Donkey kick','Fire hydrant','Clamshell','Side-lying leg lift','Curtsy lunge','Sumo deadlift','Kettlebell swing','Frog pump','Glute kickback','B-stance hip thrust','Lateral walk','Pilates side kick'],
-  'Full body':['Burpee','Jumping jacks','High knees','Butt kicks','Squat jump','Skaters','Mountain climbers','Jump lunge','Plank jack','Thruster','Dumbbell snatch','Inchworm','Star jump','Shadow boxing','Jump rope'],
+  Chest:['Push-up','Wide push-up','Incline push-up','Decline push-up','Dumbbell bench press','Incline dumbbell press','Dumbbell floor press','Dumbbell fly','Squeeze press','Dumbbell pullover','Pilates push-up','Archer push-up','Staggered push-up','Single-arm floor press','Hex press','TRX chest press','Band chest press','Cable fly','Machine chest press'],
+  Back:['Bent-over row','Single-arm row','Renegade row','Reverse fly','Superman','Pilates swimming','Romanian deadlift','Dumbbell deadlift','Dumbbell shrug','Good morning','Tripod row','Chest-supported row','Swan','Reverse snow angel',"Farmer's carry",'TRX row','Band pull-apart','Lat pulldown','Seated cable row','Pull-up','Chin-up'],
+  Shoulders:['Overhead press','Arnold press','Lateral raise','Front raise','Rear delt fly','Pike push-up','Push press','Y raise','Plank shoulder tap','Half-kneeling press','Upright row','Seated dumbbell press','Around the world','Dumbbell halo','Bear plank hold','Band face pull','Cable lateral raise','TRX Y fly'],
+  Arms:['Bicep curl','Hammer curl','Concentration curl','Zottman curl','Tricep kickback','Overhead tricep extension','Skull crusher','Tricep dip','Diamond push-up','Close-grip floor press','Reverse curl','Cross-body hammer curl','Wrist curl','Close-grip push-up','Tate press','Band bicep curl','Tricep pushdown','TRX bicep curl','Cable curl'],
+  Core:['Plank','Side plank','Dead bug','The Hundred','Teaser','Crunch','Bicycle crunch','Leg raise','Mountain climbers','Single-leg stretch','Russian twist','Hollow body hold','Side plank hip dip','Bird dog','Toe taps','Stability ball crunch','Stability ball pike','Hanging knee raise','Medicine ball Russian twist','TRX mountain climber'],
+  Legs:['Goblet squat','Sumo squat','Jump squat','Bulgarian split squat','Reverse lunge','Walking lunge','Step-up','Romanian deadlift','Calf raise','Wall sit','Lateral lunge','Single-leg Romanian deadlift','Dumbbell front squat','Hamstring walkout','Single-leg calf raise','TRX squat','Box jump','Leg press','Leg extension','Leg curl','Stability ball hamstring curl'],
+  Glutes:['Glute bridge','Single-leg glute bridge','Hip thrust','Donkey kick','Fire hydrant','Clamshell','Side-lying leg lift','Curtsy lunge','Sumo deadlift','Kettlebell swing','Frog pump','Glute kickback','B-stance hip thrust','Lateral walk','Pilates side kick','Banded glute bridge','Banded clamshell','Cable kickback','Kettlebell deadlift'],
+  'Full body':['Burpee','Jumping jacks','High knees','Butt kicks','Squat jump','Skaters','Mountain climbers','Jump lunge','Plank jack','Thruster','Dumbbell snatch','Inchworm','Star jump','Shadow boxing','Jump rope','Kettlebell clean','Turkish get-up','Medicine ball slam','Wall ball','Bike sprint','Rower sprint','Treadmill sprint'],
   Pilates:['The Hundred','Roll up','Single-leg circle','Rolling like a ball','Single-leg stretch','Double-leg stretch','Criss-cross','Spine stretch forward','Saw','Swan','Spine twist','Side kick series','Teaser','Swimming','Leg pull front'],
   Mobility:['Cat-cow',"Child's pose",'Downward dog','Cobra stretch','Hip flexor stretch',"World's greatest stretch",'Thread the needle','Thoracic rotation','Hamstring stretch','Standing forward fold','Pigeon stretch','Spinal roll down','Shoulder rolls','Hip circles','Side-lying open book']
 };
+// Equipment. Each exercise lists what it needs: space-separated requirements, each a |-separated set of alternatives
+// ('db|kb bench' = a dumbbell or kettlebell, plus a bench). Exercises not listed are bodyweight and always available.
+const EQUIP=[['db','Dumbbells'],['kb','Kettlebell'],['barbell','Barbell'],['band','Resistance bands'],['trx','TRX / suspension trainer'],['bench','Bench'],['box','Step or box'],['bar','Pull-up bar'],['ball','Stability ball'],['mb','Medicine ball'],['rope','Jump rope'],['cable','Cable machine'],['machine','Weight machines'],['cardio','Cardio machines']];
+const EQ_NAME=Object.fromEntries(EQUIP);
+const EQ={
+  'Dumbbell bench press':'db bench','Incline dumbbell press':'db bench','Dumbbell floor press':'db','Dumbbell fly':'db','Squeeze press':'db','Dumbbell pullover':'db|kb','Single-arm floor press':'db|kb','Hex press':'db',
+  'TRX chest press':'trx','Band chest press':'band','Cable fly':'cable','Machine chest press':'machine',
+  'Bent-over row':'db|kb|barbell|band','Single-arm row':'db|kb','Renegade row':'db|kb','Reverse fly':'db|band','Romanian deadlift':'db|kb|barbell','Dumbbell deadlift':'db','Dumbbell shrug':'db','Good morning':'barbell|db|band','Tripod row':'db|kb','Chest-supported row':'db bench',"Farmer's carry":'db|kb',
+  'TRX row':'trx','Band pull-apart':'band','Lat pulldown':'machine|cable','Seated cable row':'cable','Pull-up':'bar','Chin-up':'bar',
+  'Overhead press':'db|kb|barbell|band','Arnold press':'db','Lateral raise':'db|band','Front raise':'db|band','Rear delt fly':'db|band','Push press':'db|kb|barbell','Y raise':'db|band','Half-kneeling press':'db|kb','Upright row':'db|kb|barbell|band','Seated dumbbell press':'db bench','Around the world':'db','Dumbbell halo':'kb|db',
+  'Band face pull':'band|cable','Cable lateral raise':'cable','TRX Y fly':'trx',
+  'Bicep curl':'db|band|barbell','Hammer curl':'db','Concentration curl':'db','Zottman curl':'db','Tricep kickback':'db|band','Overhead tricep extension':'db|kb|band','Skull crusher':'db|barbell','Tricep dip':'bench|box','Close-grip floor press':'db|barbell','Reverse curl':'db|barbell|band','Cross-body hammer curl':'db','Wrist curl':'db|barbell','Tate press':'db',
+  'Band bicep curl':'band','Tricep pushdown':'cable|band','TRX bicep curl':'trx','Cable curl':'cable',
+  'Stability ball crunch':'ball','Stability ball pike':'ball','Hanging knee raise':'bar','Medicine ball Russian twist':'mb','TRX mountain climber':'trx',
+  'Goblet squat':'db|kb','Bulgarian split squat':'bench|box','Step-up':'box|bench','Dumbbell front squat':'db',
+  'TRX squat':'trx','Box jump':'box','Leg press':'machine','Leg extension':'machine','Leg curl':'machine','Stability ball hamstring curl':'ball',
+  'Hip thrust':'bench|box','Sumo deadlift':'db|kb|barbell','Kettlebell swing':'kb','B-stance hip thrust':'bench|box','Lateral walk':'band',
+  'Banded glute bridge':'band','Banded clamshell':'band','Cable kickback':'cable','Kettlebell deadlift':'kb',
+  'Thruster':'db|kb|barbell','Dumbbell snatch':'db|kb','Jump rope':'rope','Kettlebell clean':'kb','Turkish get-up':'kb|db','Medicine ball slam':'mb','Wall ball':'mb','Bike sprint':'cardio','Rower sprint':'cardio','Treadmill sprint':'cardio'
+};
+const needs=name=>(EQ[name]||'').split(' ').filter(Boolean).map(g=>g.split('|'));
+const canDo=name=>needs(name).every(g=>g.some(x=>settings.equip.includes(x)));
+const eqLabel=name=>needs(name).map(g=>g.map(x=>EQ_NAME[x]).join(' or ')).join(' + ')||'Bodyweight';
 const LIB_ALL=Object.entries(LIB).flatMap(([part,names])=>names.map(name=>({name,part})));
-function libMatches(q){q=(q||'').trim().toLowerCase();return q?LIB_ALL.filter(x=>x.name.toLowerCase().includes(q)||x.part.toLowerCase().startsWith(q)):LIB_ALL}
+function libMatches(q,all){q=(q||'').trim().toLowerCase();const pool=all?LIB_ALL:LIB_ALL.filter(x=>canDo(x.name));return q?pool.filter(x=>x.name.toLowerCase().includes(q)||x.part.toLowerCase().startsWith(q)):pool}
 function libRows(list,grouped,row){let last='';return list.map(x=>{const h=grouped&&x.part!==last?`<div class="sug-h eyebrow">${x.part}</div>`:'';last=x.part;return h+row(x)}).join('')}
 // Exercise-name dropdown: shows the library while the name field is focused and filters as you type.
 function showSuggest(inp){
@@ -698,8 +725,10 @@ function showSuggest(inp){
 function closeSuggest(){document.querySelectorAll('.suggest').forEach(b=>b.remove())}
 function libListHTML(){
   const {part,q}=S.lib,list=libMatches(q).filter(x=>part==='All'||x.part===part);
-  if(!list.length)return '<div class="empty">No matches. You can still type any name in the builder.</div>';
-  return libRows(list,part==='All',x=>`<div class="lib-row">${figSVG(x.name)}<span class="lib-n"><b>${esc(x.name)}</b><small>${esc(MOVES[moveFor(x.name)].cue)}</small></span><button type="button" class="chip" data-libadd="${esc(x.name)}">Add</button></div>`);
+  const hidden=libMatches(q,true).filter(x=>part==='All'||x.part===part).length-list.length;
+  const note=hidden?`<div class="note lib-hidden">${hidden} hidden for equipment you don't have. Change it under My equipment in Settings.</div>`:'';
+  if(!list.length)return note+'<div class="empty">No matches. You can still type any name in the builder.</div>';
+  return note+libRows(list,part==='All',x=>`<div class="lib-row">${figSVG(x.name)}<span class="lib-n"><b>${esc(x.name)}</b><span class="eq-tag">${esc(eqLabel(x.name))}</span><small>${esc(MOVES[moveFor(x.name)].cue)}</small></span><button type="button" class="chip" data-libadd="${esc(x.name)}">Add</button></div>`);
 }
 function renderLib(){
   if(!S.lib){layer.innerHTML='';return}
@@ -785,6 +814,9 @@ function renderSheet(){
       ${VOICES.length?`<div class="row" style="padding-bottom:8px"><span class="lbl"><b>Voice tone</b><small>${VOICES.length} English voices on this device</small></span></div>
       <div class="row" style="border-top:0;padding-top:0;padding-bottom:16px;min-height:0;gap:8px;align-items:stretch"><select class="text-field" id="f-voice" data-voice style="flex:1;min-width:0">${VOICES.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a)).map(v=>`<option value="${esc(v.voiceURI)}" ${pickVoice()&&pickVoice().voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}${/natural|neural|premium|enhanced|siri/i.test(v.name)?' ★':''}</option>`).join('')}</select><button class="btn" data-act="previewVoice" style="flex:0 0 auto;padding:0 18px;border-radius:10px">Preview</button></div>`:''}
     </div>
+    <h2 style="font-size:17px;font-weight:600">My equipment</h2>
+    <p class="note" style="margin:-6px 0 0">The exercise library only shows moves you can do with what you have. Bodyweight moves always show.</p>
+    <div class="chip-set eq-set">${EQUIP.map(([k,n])=>`<button type="button" class="chip" data-eq="${k}" aria-pressed="${settings.equip.includes(k)}">${n}</button>`).join('')}</div>
     <div class="card rows"><div class="row"><span class="lbl"><b>Who's working out</b><small>Used in greetings and voice cues</small></span><input class="text-field" id="f-nick" data-nick value="${esc(settings.nick)}" style="width:130px;padding:8px 10px"></div></div>
     <p class="note">Prototype note: in the iOS build these map to AVAudioSession with music ducking, Live Activities and Watch haptics. The browser plays sound only after you tap Start.</p>
     <button class="btn" data-act="closeSheet">Close</button>
@@ -858,6 +890,7 @@ app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==
 layer.addEventListener('change',e=>{if(e.target.matches('[data-nick]')){settings.nick=e.target.value.trim()||'Bubba';store.set('cadence.settings',settings);return}if(e.target.matches('[data-voice]')){settings.voiceURI=e.target.value;store.set('cadence.settings',settings);say('Rest. Next up, air squats.',true)}});
 layer.addEventListener('input',e=>{if(e.target.matches('[data-libq]')&&S.lib){S.lib.q=e.target.value;document.getElementById('lib-list').innerHTML=libListHTML()}});
 layer.addEventListener('click',e=>{
+  const eq=e.target.closest('[data-eq]');if(eq){const k=eq.dataset.eq,h=settings.equip;settings.equip=h.includes(k)?h.filter(x=>x!==k):h.concat(k);store.set('cadence.settings',settings);eq.setAttribute('aria-pressed',settings.equip.includes(k));return}
   if(S.lib){const lp=e.target.closest('[data-libpart]'),la=e.target.closest('[data-libadd]');
     if(lp){S.lib.part=lp.dataset.libpart;layer.querySelectorAll('[data-libpart]').forEach(b=>b.setAttribute('aria-pressed',b===lp));document.getElementById('lib-list').innerHTML=libListHTML();return}
     if(la){addFromLib(la.dataset.libadd);return}

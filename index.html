@@ -100,16 +100,17 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 
 /* Form rows */
 .rows{display:flex;flex-direction:column;overflow:hidden}
-.row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line);min-height:56px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 16px;border-top:1px solid var(--line);min-height:56px}
 .row:first-child{border-top:0}
 .row .lbl{flex:1;min-width:0}
-.row .lbl b{display:block;font-weight:500}
-.row .lbl small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:2px}
-.stepper{display:inline-flex;align-items:center;gap:2px;flex:none;background:var(--surface-2);border-radius:999px;padding:3px}
-.stepper button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--fg)}
+.row .lbl b{display:block;font-weight:500;line-height:1.3;overflow-wrap:break-word}
+.row .lbl small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:2px;overflow-wrap:break-word;hyphens:auto}
+/* Steppers share one width per screen so they line up, and never take more than 60% of a row. */
+.stepper{display:flex;align-items:center;gap:2px;flex:none;width:clamp(112px,40%,148px);max-width:60%;background:var(--surface-2);border-radius:999px;padding:3px}
+.stepper button{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--fg)}
 .stepper button:hover{background:var(--surface)}
-.stepper .val{width:64px;min-width:0;text-align:center;font-weight:600;font-size:15px;background:transparent;border:0;padding:0}
-.stepper .val.narrow{width:40px}
+.stepper .val{flex:1;width:0;min-width:0;text-align:center;font-weight:600;font-size:15px;background:transparent;border:0;padding:0}
+@media (max-width:340px){.row{gap:10px;padding:10px 10px 10px 14px}.stepper button{width:28px;height:28px;font-size:16px}.stepper .val{font-size:14px}}
 .phase-swatch{width:4px;align-self:stretch;border-radius:2px;flex:none;margin-left:-4px}
 .text-field{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:10px;padding:11px 12px;font-size:15px}
 .text-field:focus{border-color:var(--accent);outline:0;background:var(--surface)}

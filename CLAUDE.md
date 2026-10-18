@@ -5,7 +5,7 @@ A personal HIIT / interval timer web app, built as a gift. Single static page, n
 ## Files
 - `index.html` — the whole app (markup, CSS, JS in one file). Edit this for any feature or copy change.
 - `icon.svg` — source for the app icon (Bubba the stopwatch). Re-render `icon-180/192/512.png` from it with headless Chrome `--screenshot` after editing.
-- `manifest.webmanifest`, `sw.js`, `icon-*.png` — installable web app bits (Add to Home Screen, offline cache). Bump the cache name in `sw.js` (`bubba-v1` → `bubba-v2`) whenever `index.html` changes so installed copies pick up the update.
+- `manifest.webmanifest`, `sw.js`, `icon-*.png` — installable web app bits (Add to Home Screen, offline cache). Bump the cache name in `sw.js` (`bubba-v5` → `bubba-v6`) whenever any app file changes. The page is fetched network-first, other files cache-first.
 - `README.md` — install/hosting notes.
 
 ## How the app works

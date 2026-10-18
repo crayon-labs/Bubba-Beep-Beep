@@ -492,6 +492,14 @@ function renderAllWorkouts(){
     <p class="note" style="margin:-4px 0 0">Most recently used first</p>
     <div class="lib-list"><div class="card preset-list">${byRecent().map(presetRow).join('')}</div></div></div></div>`;
 }
+// History: home shows the 3 most recent sessions; "See all" lists every one in a sheet.
+const histRow=h=>`<div class="hist"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:${PH[h.color||'work'].c};flex:none"></span><span class="meta"><b>${esc(h.name)}</b><small>${new Date(h.at).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} · ${h.intervals} intervals${h.completed?'':' · ended early'}</small></span><span class="num" style="color:var(--muted)">${fmt(h.duration)}</span></div>`;
+function renderAllHistory(){
+  if(!S.allH){layer.innerHTML='';return}
+  layer.innerHTML=`<div class="sheet" data-act="closeHist"><div class="panel lib" data-stop>
+    <div class="grab"></div><div class="lib-head"><h2 style="font-size:17px;font-weight:600">History</h2><button type="button" class="text-btn" data-act="closeHist">Done</button></div>
+    <div class="lib-list"><div class="card">${history.map(histRow).join('')}</div></div></div></div>`;
+}
 function openPreset(id){const p=presets.find(x=>x.id===id);if(!p)return;S.draft=JSON.parse(JSON.stringify(p));S.editingId=p.id;S.draftMode='builder';S.screen='builder';render()}
 function renderHome(){
   const stats=history.reduce((a,h)=>{a.n++;a.t+=h.duration;return a},{n:0,t:0});
@@ -507,7 +515,8 @@ function renderHome(){
     </div>
     <div class="section"><div class="section-head"><h2>History</h2>${history.length?'<button class="text-btn" data-act="clearhist">Clear</button>':''}</div>
       <div class="stat-row"><div class="card stat"><div class="eyebrow">Sessions</div><div class="v num">${stats.n}</div></div><div class="card stat"><div class="eyebrow">This week</div><div class="v num">${thisWeek}</div></div><div class="card stat"><div class="eyebrow">Total time</div><div class="v num">${stats.t?fmtLong(stats.t):'0m'}</div></div></div>
-      <div class="card">${history.length?history.slice(0,8).map(h=>`<div class="hist"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:${PH[h.color||'work'].c};flex:none"></span><span class="meta"><b>${esc(h.name)}</b><small>${new Date(h.at).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} · ${h.intervals} intervals${h.completed?'':' · ended early'}</small></span><span class="num" style="color:var(--muted)">${fmt(h.duration)}</span></div>`).join(''):'<div class="empty">Finished sessions appear here. First one soon?</div>'}</div>
+      <div class="card">${history.length?history.slice(0,3).map(histRow).join(''):'<div class="empty">Finished sessions appear here. First one soon?</div>'}</div>
+      ${history.length>3?`<button class="see-more" data-act="allHistory">See all ${history.length} sessions</button>`:''}
     </div>
   </div>`;
 }
@@ -855,7 +864,7 @@ function paintRun(full){
 function renderSummary(){
   const h=S.summary;
   app.innerHTML=`
-  <div class="topbar"><h1>${h.completed?`Nice work, ${esc(settings.nick)} 💛`:'Workout ended'}</h1></div>${h.completed?'<canvas id="hearts" class="hearts"></canvas>':''}
+  <div class="topbar"><h1>${h.completed?`Nice work, ${esc(settings.nick)} 💛`:'Workout ended'}</h1></div>${h.completed?'<canvas id="hearts" class="hearts"></canvas><canvas id="confetti" class="hearts"></canvas>':''}
   <div class="scroll">
     <div class="summary-hero"><div class="big num">${fmt(h.duration)}</div><p>${esc(h.name)} · ${new Date(h.at).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</p></div>
     <div class="card sum-list">
@@ -866,12 +875,25 @@ function renderSummary(){
     </div>
   </div>
   <div class="actionbar"><button class="btn ghost" data-act="again">Run again</button><button class="btn primary" data-act="home">Done</button></div>`;
-  if(h.completed)hearts();
+  if(h.completed){hearts();confetti()}
+}
+// Confetti: two bursts from the bottom corners, with gravity, drag and spin, cleared after a few seconds.
+function confetti(){const c=document.getElementById('confetti');if(!c||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const x=c.getContext('2d'),dpr=devicePixelRatio||1,W=innerWidth,H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.scale(dpr,dpr);
+  const cols=['#F2B544','#1E7A5C','#6E9BEE','#9B6BE0','#F28CB1','#E26A58'];
+  const burst=(ox,dir,n)=>Array.from({length:n},()=>{const a=(-Math.PI/2)+dir*(.1+Math.random()*.5),v=15+Math.random()*13;
+    return {x:ox,y:H+10,vx:Math.cos(a)*v,vy:Math.sin(a)*v,w:6+Math.random()*6,h:3+Math.random()*4,r:Math.random()*6.3,vr:(Math.random()-.5)*.4,c:cols[Math.random()*cols.length|0],tw:Math.random()*6.3}});
+  const P=[...burst(0,1,110),...burst(W,-1,110)];const t0=performance.now();let last=t0;
+  // Physics scale with elapsed time (dt in 60fps frames), so the burst looks the same on slow or throttled frames.
+  (function f(now){const el=now-t0,dt=Math.min(3,Math.max(0,(now-last)/16.67)),drag=Math.pow(.982,dt);last=now;x.clearRect(0,0,W,H);x.globalAlpha=Math.max(0,Math.min(1,(4500-el)/800));
+    for(const p of P){p.vy+=.2*dt;p.vx*=drag;p.vy*=drag;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;p.tw+=.15*dt;
+      x.save();x.translate(p.x,p.y);x.rotate(p.r);x.scale(1,Math.cos(p.tw));x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()}
+    if(el<4500&&document.body.contains(c))requestAnimationFrame(f);else c.remove()})(t0);
 }
 function hearts(){const c=document.getElementById('hearts');if(!c||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const x=c.getContext('2d');const dpr=devicePixelRatio||1;c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.scale(dpr,dpr);const cols=['#F28CB1','#F6C453','#1E7A5C','#6E9BEE','#E26A58'];const P=Array.from({length:60},()=>({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.6,vy:1.5+Math.random()*2.5,vx:(Math.random()-.5)*1.2,s:8+Math.random()*10,r:Math.random()*6.28,c:pick(cols),h:Math.random()<.5}));let t=0;function heart(px,py,s,r){x.save();x.translate(px,py);x.rotate(r);x.scale(s/16,s/16);x.beginPath();x.moveTo(0,5);x.bezierCurveTo(-8,-3,-8,-10,0,-6);x.bezierCurveTo(8,-10,8,-3,0,5);x.fill();x.restore()}function f(){x.clearRect(0,0,innerWidth,innerHeight);let alive=false;P.forEach(p=>{p.y+=p.vy;p.x+=p.vx+Math.sin((p.y+p.r)/30)*.6;p.r+=.03;if(p.y<innerHeight+30)alive=true;x.fillStyle=p.c;if(p.h)heart(p.x,p.y,p.s,p.r);else{x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()}});t++;if(alive&&t<600)requestAnimationFrame(f);else c.remove()}requestAnimationFrame(f)}
 
 function renderSheet(){
-  if(!S.sheet){if(!S.lib&&!S.allW)layer.innerHTML='';return}
+  if(!S.sheet){if(!S.lib&&!S.allW&&!S.allH)layer.innerHTML='';return}
   layer.innerHTML=`<div class="sheet" data-act="closeSheet"><div class="panel" data-stop>
     <div class="grab"></div><h2 style="font-size:17px;font-weight:600">Cues</h2>
     <div class="card rows">
@@ -930,6 +952,7 @@ app.addEventListener('click',e=>{
     case 'toBuilder':S.draftMode='builder';S.draft.name=S.draft.name==='Quick timer'?'':S.draft.name;S.screen='builder';render();break;
     case 'open':openPreset(b.dataset.id);break;
     case 'allWorkouts':S.allW=true;renderAllWorkouts();break;
+    case 'allHistory':S.allH=true;renderAllHistory();break;
     case 'welcomeName':{const v=(document.getElementById('welcome-name').value||'').trim();settings.nick=v||'Bubba';store.set('cadence.settings',settings);S.welcomeStep='equip';render();break}
     case 'welcomeBack':S.welcomeStep='name';render();break;
     case 'finishWelcome':store.set('cadence.onboarded',true);store.set('cadence.settings',settings);S.screen='home';render();break;
@@ -966,6 +989,7 @@ app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==
 layer.addEventListener('change',e=>{if(e.target.matches('[data-nick]')){settings.nick=e.target.value.trim()||'Bubba';store.set('cadence.settings',settings);return}if(e.target.matches('[data-voice]')){settings.voiceURI=e.target.value;store.set('cadence.settings',settings);say('Rest. Next up, air squats.',true)}});
 layer.addEventListener('input',e=>{if(e.target.matches('[data-libq]')&&S.lib){S.lib.q=e.target.value;document.getElementById('lib-list').innerHTML=libListHTML()}});
 layer.addEventListener('click',e=>{
+  if(S.allH){if(e.target.closest('.lib-head [data-act="closeHist"]')||e.target.matches('.sheet[data-act="closeHist"]')){S.allH=false;renderAllHistory()}return}
   if(S.allW){const o=e.target.closest('[data-act="open"]');if(o){S.allW=false;layer.innerHTML='';openPreset(o.dataset.id);return}
     if(e.target.closest('.lib-head [data-act="closeAll"]')||e.target.matches('.sheet[data-act="closeAll"]')){S.allW=false;renderAllWorkouts()}
     return}

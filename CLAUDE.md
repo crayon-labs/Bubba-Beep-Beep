@@ -21,6 +21,11 @@ A personal HIIT / interval timer web app, built as a gift. Single static page, n
 - Audio session: `setSession()` uses `'ambient'` so iOS mixes cues with Spotify/other music (but follows the silent switch); the "Sound on silent" setting (`settings.loud`) switches to `'playback'`, which plays on silent but pauses music. If the AudioContext isn't running when a countdown beep is due, it's spoken instead.
 - Encouragement: halfway through each work set of 20s+, a line from `CHEERS` is spoken (shuffled deck, no repeats until exhausted).
 - Seed presets: Full Body Circuit, a Pilates-strength set (Full Upper Body, Chest, Back, Core & Abs Burn, Legs) and Mat Pilates Flow (classical mat order). New seed presets reach existing devices via `cadence.seedIds`; deleted ones aren't revived. Retired seeds (`RETIRED`: Classic Tabata, Kettlebell Strength) are removed once via `cadence.retired`.
+- Ending a workout takes two taps: the first arms "End workout" for 3s (`data-armed`, timeout on `S.endArm`), the second within that window calls `finishRun(false)`.
+- Session duration excludes paused time: `togglePause` tracks `R.pausedAt`/`R.pausedMs`, and `finishRun` also subtracts a pause still open when the workout is ended.
+- Previous works like a music player: more than 3s into the interval (or on the first interval) it restarts the current one (`skip(0)`), otherwise it goes back one (`skip(-1)`).
+- Haptics: `vib()` buzzes on work start, rest and finish (and on arming End). iOS Safari ignores `navigator.vibrate`, so this is Android only.
+- Update toast: when a new service worker installs over an existing one, a persistent "New version ready · Tap to update" toast reloads the page. Bumping the cache name in `sw.js` is still what triggers it.
 - Persistence: `localStorage` keys `cadence.presets`, `cadence.history`, `cadence.settings`. Wrapped in try/catch; the app must work without storage.
 - Theme: all colours are CSS tokens on `:root` with dark overrides via `prefers-color-scheme` and `[data-theme]`. Phase colours: prep amber, work green, rest blue, round-break purple.
 - Fonts: Instrument Sans for UI, Inter (tabular nums) for every number via the `.num` class.

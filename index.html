@@ -256,6 +256,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .note{font-size:12.5px;color:var(--muted);padding:0 4px}
 .greet{margin:0;color:var(--muted);font-size:14px}
 .hearts{position:fixed;inset:0;pointer-events:none;z-index:15}
+.toast.update{cursor:pointer;z-index:40}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;z-index:30;box-shadow:var(--shadow)}
 </style>
 
@@ -411,9 +412,11 @@ function beepAt(sec,when){const R=S.run,c=ac();if(!settings.sound)return;
   const src=c.createBufferSource(),g=c.createGain();src.buffer=beepBuf;src.playbackRate.value=1.08;g.gain.value=.9;src.connect(g).connect(c.destination);src.start(c.currentTime+when);
   if(R){R.pend=(R.pend||[]).filter(x=>x.t>c.currentTime);R.pend.push({src,at:c.currentTime+when,t:c.currentTime+when+.4})}}
 function cancelBeeps(){const R=S.run;if(!R||!R.pend)return;R.pend.forEach(x=>{try{x.src.stop()}catch(e){}});R.pend=[]}
-const beepWork=()=>{tone(1047,.16);tone(1319,.22,.17)};
-const beepRest=()=>tone(660,.35);
-const beepDone=()=>{tone(784,.18);tone(988,.18,.2);tone(1175,.4,.4)};
+// Haptics. iOS Safari ignores navigator.vibrate, so this only buzzes on Android and is a no-op elsewhere.
+const vib=p=>{try{if(settings.sound&&navigator.vibrate)navigator.vibrate(p)}catch(e){}};
+const beepWork=()=>{tone(1047,.16);tone(1319,.22,.17);vib([60,40,60])};
+const beepRest=()=>{tone(660,.35);vib(200)};
+const beepDone=()=>{tone(784,.18);tone(988,.18,.2);tone(1175,.4,.4);vib([80,60,80,60,250])};
 // Voice: prefer the platform's natural/premium voices over the default robotic one.
 let VOICES=[];
 function loadVoices(){try{VOICES=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang))}catch(e){VOICES=[]}}
@@ -590,7 +593,7 @@ function unlockScreen(){try{wake&&wake.release();wake=null}catch(e){}}
 function startRun(w){
   {const p=presets.find(x=>x.id===w.id);if(p){p.lastUsed=Date.now();store.set('cadence.presets',presets)}}
   const seq=compile(w);if(!seq.length)return;
-  S.run={w,seq,idx:0,endAt:0,remain:0,paused:false,startedAt:Date.now(),nextBeep:3,pend:[],timer:null,color:w.color||'work'};
+  S.run={w,seq,idx:0,endAt:0,remain:0,paused:false,startedAt:Date.now(),pausedMs:0,pausedAt:0,nextBeep:3,pend:[],timer:null,color:w.color||'work'};
   ac();loadBeep();
   S.screen='run';
   beginInterval(0,true);
@@ -641,11 +644,12 @@ function clearNotify(){if(navigator.serviceWorker)navigator.serviceWorker.ready.
 function addRest(){const R=S.run;if(!R)return;const it=R.seq[R.idx];if(it.kind==='work')return;it.dur+=10;if(R.paused)R.remain+=10000;else R.endAt+=10000;R.remain=R.paused?R.remain:R.endAt-Date.now();
   if(R.remain>3000){cancelBeeps();R.nextBeep=3}paintRun(true);if(document.hidden)runNotify()}
 function restartEx(){const R=S.run;if(!R)return;skip(0)}
-function togglePause(){const R=S.run;if(!R)return;if(R.paused){R.endAt=Date.now()+R.remain;R.paused=false;ac()}else{R.remain=R.endAt-Date.now();R.paused=true;{const due=actx&&(R.pend||[]).some(x=>x.at>actx.currentTime);cancelBeeps();if(due)R.nextBeep++}try{speechSynthesis.cancel()}catch(e){}}paintRun(true)}
+function togglePause(){const R=S.run;if(!R)return;if(R.paused){R.pausedMs+=Date.now()-R.pausedAt;R.endAt=Date.now()+R.remain;R.paused=false;ac()}else{R.pausedAt=Date.now();R.remain=R.endAt-Date.now();R.paused=true;{const due=actx&&(R.pend||[]).some(x=>x.at>actx.currentTime);cancelBeeps();if(due)R.nextBeep++}try{speechSynthesis.cancel()}catch(e){}}paintRun(true)}
 function skip(d){const R=S.run;if(!R)return;const n=R.idx+d;if(n<0)return;if(n>=R.seq.length){finishRun(true);return}beginInterval(n);if(R.paused){R.remain=R.seq[n].dur*1000}paintRun(true)}
 function finishRun(completed){
   const R=S.run;if(!R)return;clearInterval(R.timer);unlockScreen();cancelBeeps();clearNotify();try{speechSynthesis.cancel()}catch(e){}
-  const elapsed=Math.round((Date.now()-R.startedAt)/1000);
+  // Paused time doesn't count, including a pause still open when the workout is ended.
+  const elapsed=Math.round((Date.now()-R.startedAt-R.pausedMs-(R.paused?Date.now()-R.pausedAt:0))/1000);
   const done=completed?R.seq.length:R.idx;
   const entry={id:uid(),name:R.w.name||'Quick timer',color:R.color,at:Date.now(),duration:elapsed,intervals:done,total:R.seq.length,completed,planned:total(R.seq),work:R.seq.filter((x,i)=>x.kind==='work'&&(completed||i<R.idx)).length};
   history.unshift(entry);history=history.slice(0,100);store.set('cadence.history',history);
@@ -965,8 +969,10 @@ app.addEventListener('click',e=>{
     case 'addRest':addRest();break;
     case 'restartEx':restartEx();break;
     case 'skip':skip(1);break;
-    case 'prev':skip(-1);break;
-    case 'end':finishRun(false);break;
+    // Previous restarts the current interval if more than 3s in (or on the first one), otherwise goes back one.
+    case 'prev':{const R=S.run;if(!R)break;const it=R.seq[R.idx],into=it.dur*1000-(R.paused?R.remain:R.endAt-Date.now());skip(into>3000||R.idx===0?0:-1);break}
+    // Two taps to end: the first arms the button for 3s, a second tap within that window ends the workout.
+    case 'end':if(b.dataset.armed){clearTimeout(S.endArm);S.endArm=null;finishRun(false)}else{b.dataset.armed='1';b.textContent='Tap again to end';vib(40);S.endArm=setTimeout(()=>{delete b.dataset.armed;b.textContent='End workout';S.endArm=null},3000)}break;
     case 'again':startRun(S.draft);break;
     case 'clearhist':history=[];store.set('cadence.history',history);render();break;
   }
@@ -1013,6 +1019,13 @@ render();
 })();
 </script>
 
-<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}</script>
+<script>
+// When a new service worker has installed over an existing one, offer a reload so the update takes effect.
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").then(reg=>{
+  const offer=()=>{if(!navigator.serviceWorker.controller||document.querySelector(".toast.update"))return;const t=document.createElement("div");t.className="toast update";t.textContent="New version ready · Tap to update";t.addEventListener("click",()=>location.reload());document.body.appendChild(t)};
+  if(reg.waiting)offer();
+  reg.addEventListener("updatefound",()=>{const w=reg.installing;if(w)w.addEventListener("statechange",()=>{if(w.state==="installed")offer()})});
+}).catch(()=>{})}
+</script>
 </body>
 </html>

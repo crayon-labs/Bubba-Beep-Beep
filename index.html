@@ -218,7 +218,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 // ---------- seed presets ----------
 const SEED=[
   {id:'tabata',name:'Classic Tabata',color:'work',prep:10,rounds:1,restBetweenExercises:0,restBetweenRounds:0,
-   exercises:[{id:uid(),name:'Work',dur:20,sets:8,reps:'',restBetweenSets:10}]},
+   exercises:[{id:uid(),name:'Workout',dur:20,sets:8,reps:'',restBetweenSets:10}]},
   {id:'fullbody',name:'Full Body Circuit',color:'round',prep:10,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
     {id:uid(),name:'Push-ups',dur:40,sets:1,reps:'12',restBetweenSets:15},
@@ -248,7 +248,7 @@ function compile(w){
     exs.forEach((e,i)=>{
       const lastEx=i===exs.length-1;
       for(let s=1;s<=e.sets;s++){
-        seq.push({kind:'work',label:e.name||'Work',dur:e.dur,set:s,sets:e.sets,reps:e.reps,round:r,rounds:w.rounds,exIdx:i});
+        seq.push({kind:'work',label:(!e.name||e.name==='Work')?'Workout':e.name,dur:e.dur,set:s,sets:e.sets,reps:e.reps,round:r,rounds:w.rounds,exIdx:i});
         const lastSet=s===e.sets;
         const finalInterval=lastSet&&lastEx&&r===w.rounds;
         if(finalInterval) break;
@@ -264,7 +264,7 @@ function compile(w){
 const total=seq=>seq.reduce((a,x)=>a+x.dur,0);
 function fmt(s){s=Math.max(0,Math.round(s));const m=Math.floor(s/60),ss=s%60;return m+':'+String(ss).padStart(2,'0')}
 function fmtLong(s){s=Math.round(s);if(s<60)return s+'s';const m=Math.floor(s/60),ss=s%60;return ss?`${m}m ${ss}s`:`${m} min`}
-function summaryLine(w){const n=w.exercises.length;const e=n===1&&w.exercises[0].name==='Work'?`${w.exercises[0].sets} × ${w.exercises[0].dur}s / ${w.exercises[0].restBetweenSets}s`:`${n} exercise${n>1?'s':''}`;return `${e} · ${w.rounds} round${w.rounds>1?'s':''}`}
+function summaryLine(w){const n=w.exercises.length;const e=n===1&&/^Work(out)?$/.test(w.exercises[0].name)?`${w.exercises[0].sets} × ${w.exercises[0].dur}s / ${w.exercises[0].restBetweenSets}s`:`${n} exercise${n>1?'s':''}`;return `${e} · ${w.rounds} round${w.rounds>1?'s':''}`}
 
 // ---------- audio ----------
 let actx=null;
@@ -272,7 +272,8 @@ function ac(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioCon
 function tone(freq,dur,when=0,vol=.25){const c=ac();if(!c||!settings.sound)return;const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0,c.currentTime+when);g.gain.linearRampToValueAtTime(vol,c.currentTime+when+.01);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+when+dur);o.connect(g).connect(c.destination);o.start(c.currentTime+when);o.stop(c.currentTime+when+dur+.02)}
 // Cute cartoon "beep beep": two quick chirps that bend up in pitch, softened with a triangle wave.
 function chirp(freq,dur,when=0,vol=.22){const c=ac();if(!c||!settings.sound)return;const t=c.currentTime+when,o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.setValueAtTime(freq*.85,t);o.frequency.exponentialRampToValueAtTime(freq*1.12,t+dur*.6);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.setValueAtTime(vol,t+dur*.55);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.02)}
-const beepShort=(sec=3)=>{const f=sec===1?1568:1175;chirp(f,.075);chirp(f,.075,.11)};
+// Countdown: the voice says "beep beep" in a bright, quick tone; the chirps stand in when voice is off or unavailable.
+const beepShort=(sec=3)=>{if(say('beep beep',false,{pitch:sec===1?1.9:1.6,rate:1.35}))return;const f=sec===1?1568:1175;chirp(f,.075);chirp(f,.075,.11)};
 const beepWork=()=>{tone(1047,.16);tone(1319,.22,.17)};
 const beepRest=()=>tone(660,.35);
 const beepDone=()=>{tone(784,.18);tone(988,.18,.2);tone(1175,.4,.4)};
@@ -282,7 +283,7 @@ function loadVoices(){try{VOICES=speechSynthesis.getVoices().filter(v=>/^en/i.te
 if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=()=>{loadVoices();if(S.sheet)renderSheet()}}
 function scoreVoice(v){const n=v.name.toLowerCase();let s=0;if(/natural|neural|premium|enhanced|siri/.test(n))s+=50;if(/samantha|ava|allison|zoe|karen|moira|serena|daniel|aria|jenny|libby|sonia|google (uk|us)/.test(n))s+=30;if(/google/.test(n))s+=10;if(/compact|eloquence|fred|zarvox|whisper|bells|cellos|trinoids|albert|junior|bahh|boing|bubbles|deranged|hysterical|organ|ralph|good news|bad news/.test(n))s-=60;if(v.default)s+=5;return s}
 function pickVoice(){if(settings.voiceURI){const v=VOICES.find(x=>x.voiceURI===settings.voiceURI);if(v)return v}return VOICES.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a))[0]||null}
-function say(text,force){if((!settings.voice&&!force)||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const v=pickVoice();if(v)u.voice=v;u.rate=0.95;u.pitch=1;u.volume=1;speechSynthesis.speak(u)}catch(e){}}
+function say(text,force,o){if((!settings.voice&&!force)||!('speechSynthesis' in window))return false;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const v=pickVoice();if(v)u.voice=v;u.rate=(o&&o.rate)||0.95;u.pitch=(o&&o.pitch)||1;u.volume=1;speechSynthesis.speak(u);return true}catch(e){return false}}
 const NUMW=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
 const spokenNum=n=>NUMW[n]||String(n);
 
@@ -306,7 +307,7 @@ const I={
   up:'<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>',
   down:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>'
 };
-const PH={prep:{c:'var(--prep)',s:'var(--prep-soft)',n:'Get ready'},work:{c:'var(--work)',s:'var(--work-soft)',n:'Work'},rest:{c:'var(--rest)',s:'var(--rest-soft)',n:'Rest'},round:{c:'var(--round)',s:'var(--round-soft)',n:'Round break'}};
+const PH={prep:{c:'var(--prep)',s:'var(--prep-soft)',n:'Get ready'},work:{c:'var(--work)',s:'var(--work-soft)',n:'Workout'},rest:{c:'var(--rest)',s:'var(--rest-soft)',n:'Rest'},round:{c:'var(--round)',s:'var(--round-soft)',n:'Round break'}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // ---------- components ----------
@@ -324,7 +325,7 @@ function renderHome(){
   <div class="topbar"><h1>Bubba Beep Beep</h1><button class="icon-btn" data-act="settings" aria-label="Settings">${I.gear}</button></div>
   <div class="scroll">
     <p class="greet">Hi ${esc(settings.nick)} 👋 ${greeting()}</p>
-    <button class="card quick-card" data-act="quick"><span class="glyph">${I.bolt}</span><span style="flex:1;min-width:0"><b>Quick timer</b><small>Work, rest, rounds. Start in two taps.</small></span><span class="chev" style="color:var(--muted)">${I.chev}</span></button>
+    <button class="card quick-card" data-act="quick"><span class="glyph">${I.bolt}</span><span style="flex:1;min-width:0"><b>Quick timer</b><small>Workout, rest, rounds. Start in two taps.</small></span><span class="chev" style="color:var(--muted)">${I.chev}</span></button>
     <div class="section"><div class="section-head"><h2>My workouts</h2><button class="text-btn" data-act="new">+ New</button></div>
       <div class="card preset-list">${presets.length?presets.map(p=>{const t=total(compile(p));return `<button class="preset" data-act="open" data-id="${p.id}"><span class="dot" style="background:${PH[p.color||'work'].c}"></span><span class="meta"><b>${esc(p.name)}</b><small>${esc(summaryLine(p))}</small></span><span class="dur num">${fmt(t)}</span><span class="chev">${I.chev}</span></button>`}).join(''):'<div class="empty">No saved workouts yet.</div>'}</div>
     </div>
@@ -336,7 +337,7 @@ function renderHome(){
 }
 
 function newDraft(mode){
-  if(mode==='quick')return {id:uid(),name:'Quick timer',color:'work',prep:10,rounds:1,restBetweenExercises:0,restBetweenRounds:60,exercises:[{id:uid(),name:'Work',dur:30,sets:8,reps:'',restBetweenSets:15}]};
+  if(mode==='quick')return {id:uid(),name:'Quick timer',color:'work',prep:10,rounds:1,restBetweenExercises:0,restBetweenRounds:60,exercises:[{id:uid(),name:'Workout',dur:30,sets:8,reps:'',restBetweenSets:15}]};
   return {id:uid(),name:'',color:'round',prep:10,rounds:2,restBetweenExercises:15,restBetweenRounds:60,exercises:[{id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15}]};
 }
 
@@ -347,7 +348,7 @@ function renderQuick(){
   <div class="scroll">
     <div class="card rows">
       <div class="row"><span class="phase-swatch" style="background:var(--prep)"></span><span class="lbl"><b>Get ready</b><small>Countdown before the first interval</small></span>${stepper('prep',w.prep,{step:5,fmtv:fmt})}</div>
-      <div class="row"><span class="phase-swatch" style="background:var(--work)"></span><span class="lbl"><b>Work</b><small>Length of each work interval</small></span>${stepper('exercises.0.dur',e.dur,{min:5,step:5,fmtv:fmt})}</div>
+      <div class="row"><span class="phase-swatch" style="background:var(--work)"></span><span class="lbl"><b>Workout</b><small>Length of each work interval</small></span>${stepper('exercises.0.dur',e.dur,{min:5,step:5,fmtv:fmt})}</div>
       <div class="row"><span class="phase-swatch" style="background:var(--rest)"></span><span class="lbl"><b>Rest</b><small>Between work intervals</small></span>${stepper('exercises.0.restBetweenSets',e.restBetweenSets,{step:5,fmtv:fmt})}</div>
       <div class="row"><span class="phase-swatch" style="background:var(--work)"></span><span class="lbl"><b>Intervals</b><small>Work intervals per round</small></span>${stepper('exercises.0.sets',e.sets,{min:1,step:1,narrow:true})}</div>
       <div class="row"><span class="phase-swatch" style="background:var(--round)"></span><span class="lbl"><b>Rounds</b><small>Repeat the whole set</small></span>${stepper('rounds',w.rounds,{min:1,step:1,narrow:true})}</div>
@@ -502,7 +503,7 @@ function renderSheet(){
     <div class="grab"></div><h2 style="font-size:17px;font-weight:600">Cues</h2>
     <div class="card rows">
       <div class="row"><span class="lbl"><b>Sound</b><small>Beeps at every transition</small></span><button class="toggle" role="switch" aria-checked="${settings.sound}" data-set="sound" aria-label="Sound"></button></div>
-      <div class="row"><span class="lbl"><b>3-2-1 countdown</b><small>A cute beep beep before each change</small></span><button class="toggle" role="switch" aria-checked="${settings.countdown}" data-set="countdown" aria-label="Countdown"></button></div>
+      <div class="row"><span class="lbl"><b>3-2-1 countdown</b><small>Says “beep beep” before each change</small></span><button class="toggle" role="switch" aria-checked="${settings.countdown}" data-set="countdown" aria-label="Countdown"></button></div>
       <div class="row"><span class="lbl"><b>Voice</b><small>Speaks exercise, reps and what's next</small></span><button class="toggle" role="switch" aria-checked="${settings.voice}" data-set="voice" aria-label="Voice"></button></div>
       ${VOICES.length?`<div class="row"><span class="lbl"><b>Voice tone</b><small>${VOICES.length} English voices on this device</small></span></div>
       <div class="row" style="padding-top:0;min-height:0;gap:8px"><select class="text-field" id="f-voice" data-voice style="flex:1;min-width:0">${VOICES.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a)).map(v=>`<option value="${esc(v.voiceURI)}" ${pickVoice()&&pickVoice().voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}${/natural|neural|premium|enhanced|siri/i.test(v.name)?' ★':''}</option>`).join('')}</select><button class="btn" data-act="previewVoice" style="flex:0 0 auto;padding:10px 16px">Preview</button></div>`:''}

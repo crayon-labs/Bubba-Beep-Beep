@@ -231,14 +231,14 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 
 // ---------- seed presets ----------
 const SEED=[
-  {id:'fullbody',name:'Full Body Circuit',color:'round',prep:5,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
+  {id:'fullbody',name:'Full Body Circuit',color:'round',prep:8,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
     {id:uid(),name:'Push-ups',dur:40,sets:1,reps:'12',restBetweenSets:15},
     {id:uid(),name:'Air squats',dur:40,sets:1,reps:'15',restBetweenSets:15},
     {id:uid(),name:'Plank',dur:45,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Mountain climbers',dur:30,sets:1,reps:'',restBetweenSets:15}]},
   // Pilates-strength set: dumbbell work with slow lowering and weighted Pilates moves.
-  {id:'upper',name:'Full Upper Body',color:'work',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:60,
+  {id:'upper',name:'Full Upper Body',color:'work',prep:8,rounds:2,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
     {id:uid(),name:'Renegade row',dur:45,sets:1,reps:'alternate sides',restBetweenSets:15},
     {id:uid(),name:'Half-kneeling shoulder press',dur:45,sets:1,reps:'',restBetweenSets:15},
@@ -247,31 +247,31 @@ const SEED=[
     {id:uid(),name:'Bicep curl to overhead press',dur:45,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Tricep kickback',dur:45,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Pilates push-up',dur:45,sets:1,reps:'3 push-ups per walk-out',restBetweenSets:15}]},
-  {id:'chest',name:'Chest',color:'rest',prep:5,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
+  {id:'chest',name:'Chest',color:'rest',prep:8,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
    exercises:[
-    {id:uid(),name:'Dumbbell floor press',dur:40,sets:3,reps:'heavy, 3s lower',restBetweenSets:20},
+    {id:uid(),name:'Dumbbell floor press',dur:40,sets:3,reps:'heavy, take 3 sec to lower',restBetweenSets:20},
     {id:uid(),name:'Floor fly',dur:40,sets:3,reps:'slow',restBetweenSets:20},
     {id:uid(),name:'Pilates push-up',dur:40,sets:3,reps:'',restBetweenSets:20},
     {id:uid(),name:'Deficit push-up',dur:30,sets:2,reps:'hands on dumbbells',restBetweenSets:20},
     {id:uid(),name:'Squeeze press',dur:40,sets:2,reps:'',restBetweenSets:20}]},
-  {id:'back',name:'Back',color:'round',prep:5,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
+  {id:'back',name:'Back',color:'round',prep:8,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
     {id:uid(),name:'Single-arm row',dur:40,sets:2,reps:'right, then left',restBetweenSets:5},
     {id:uid(),name:'Wide bent-over row',dur:40,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Dumbbell pullover',dur:40,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Bent-over reverse fly',dur:40,sets:1,reps:'light',restBetweenSets:15},
     {id:uid(),name:'Weighted swimming',dur:40,sets:1,reps:'0.5 to 1 kg',restBetweenSets:15}]},
-  {id:'core',name:'Core & Abs Burn',color:'prep',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:45,
+  {id:'core',name:'Core & Abs Burn',color:'prep',prep:8,rounds:2,restBetweenExercises:15,restBetweenRounds:45,
    exercises:[
     {id:uid(),name:'The Hundred',dur:100,sets:1,reps:'100 counts',restBetweenSets:15},
-    {id:uid(),name:'Weighted teaser',dur:40,sets:2,reps:'4s roll down',restBetweenSets:15},
+    {id:uid(),name:'Weighted teaser',dur:40,sets:2,reps:'take 4 sec to roll down',restBetweenSets:15},
     {id:uid(),name:'Single-leg stretch to criss-cross',dur:45,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Plank with dumbbell drag-through',dur:40,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Side plank reach-under',dur:30,sets:2,reps:'left, then right',restBetweenSets:5},
     {id:uid(),name:'Weighted dead bug',dur:45,sets:1,reps:'',restBetweenSets:15}]},
-  {id:'legs',name:'Legs',color:'work',prep:5,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
+  {id:'legs',name:'Legs',color:'work',prep:8,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
    exercises:[
-    {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'3s lower, pause',restBetweenSets:20},
+    {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'take 3 sec to lower, pause',restBetweenSets:20},
     {id:uid(),name:'Bulgarian split squat',dur:45,sets:4,reps:'alternate legs',restBetweenSets:20},
     {id:uid(),name:'Romanian deadlift',dur:45,sets:3,reps:'heavy',restBetweenSets:20},
     {id:uid(),name:'Single-leg glute bridge',dur:40,sets:2,reps:'left, then right',restBetweenSets:10},
@@ -283,6 +283,9 @@ if(!presets){presets=SEED;store.set('cadence.presets',presets)}
 // Retired seed presets are removed once from devices that still have them.
 const RETIRED=['tabata','strength'];
 if(!store.get('cadence.retired',false)){presets=presets.filter(p=>!RETIRED.includes(p.id));store.set('cadence.presets',presets);store.set('cadence.retired',true)}
+// One-time refresh of built-in presets saved before the 8s Get ready and plain-English tempo labels.
+if(!store.get('cadence.mig8',false)){const L={'heavy, 3s lower':'heavy, take 3 sec to lower','4s roll down':'take 4 sec to roll down','3s lower, pause':'take 3 sec to lower, pause'};const ids=SEED.map(p=>p.id);
+ presets.forEach(p=>{if(!ids.includes(p.id))return;if(p.prep===5||p.prep===10)p.prep=8;p.exercises.forEach(e=>{if(L[e.reps])e.reps=L[e.reps]})});store.set('cadence.presets',presets);store.set('cadence.mig8',true)}
 // Add seed presets introduced after a device first saved its list, without reviving ones the user deleted.
 {const seen=store.get('cadence.seedIds',['tabata','fullbody','strength']);const fresh=SEED.filter(p=>!seen.includes(p.id)&&!presets.some(x=>x.id===p.id));
  if(fresh.length){presets=presets.concat(fresh);store.set('cadence.presets',presets)}store.set('cadence.seedIds',SEED.map(p=>p.id).concat(RETIRED))}
@@ -394,8 +397,8 @@ function renderHome(){
 }
 
 function newDraft(mode){
-  if(mode==='quick')return {id:uid(),name:'Quick timer',color:'work',prep:5,rounds:1,restBetweenExercises:0,restBetweenRounds:60,exercises:[{id:uid(),name:'Workout',dur:30,sets:8,reps:'',restBetweenSets:15}]};
-  return {id:uid(),name:'',color:'round',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:60,exercises:[{id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15}]};
+  if(mode==='quick')return {id:uid(),name:'Quick timer',color:'work',prep:8,rounds:1,restBetweenExercises:0,restBetweenRounds:60,exercises:[{id:uid(),name:'Workout',dur:30,sets:8,reps:'',restBetweenSets:15}]};
+  return {id:uid(),name:'',color:'round',prep:8,rounds:2,restBetweenExercises:15,restBetweenRounds:60,exercises:[{id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15}]};
 }
 
 function renderQuick(){
@@ -505,7 +508,7 @@ function finishRun(completed){
 // Pose points, in order: head, shoulder, elbow, wrist, hip, knee, foot, then elbow2, wrist2, knee2, foot2 (the far side; copied from the near side when omitted).
 // front:1 draws a front view, with arms and legs spread from the shoulder and hip.
 const MOVES={
-  squat:{a:'80 25 80 34 84 47 88 36 80 58 80 75 80 92',b:'79 44 76 52 80 65 85 53 68 74 85 74 80 92',db:1,cue:'Sit hips back, chest tall, 3-second lower'},
+  squat:{a:'80 25 80 34 84 47 88 36 80 58 80 75 80 92',b:'79 44 76 52 80 65 85 53 68 74 85 74 80 92',db:1,cue:'Sit hips back, chest tall, take 3 seconds to lower'},
   split:{a:'76 23 76 32 77 46 77 58 76 56 84 73 90 92 77 46 77 58 70 73 62 92',b:'74 37 74 46 75 60 75 72 74 70 91 72 90 92 75 60 75 72 70 87 54 90',db:1,cue:'Front knee over ankle, drop straight down'},
   hinge:{a:'80 25 80 34 80 47 80 59 80 58 80 75 80 92',b:'102 47 94 50 94 64 94 77 72 58 78 75 80 92',db:1,cue:'Soft knees, push hips back, long spine'},
   row:{a:'102 47 94 50 94 64 94 77 72 58 78 75 80 92',b:'102 47 94 50 82 43 84 56 72 58 78 75 80 92',db:1,cue:'Flat back, pull your elbow to your hip'},
@@ -663,7 +666,7 @@ app.addEventListener('click',e=>{
     if(a==='down'&&i<arr.length-1)[arr[i+1],arr[i]]=[arr[i],arr[i+1]];
     render();return}
   const tpl=e.target.closest('[data-tpl]');
-  if(tpl){const w=S.draft,x=w.exercises[0];const T={tabata:[5,20,10,8,1,0],emom:[5,45,15,10,1,0],'3030':[5,30,30,10,1,0],'4515':[5,45,15,6,3,60]}[tpl.dataset.tpl];[w.prep,x.dur,x.restBetweenSets,x.sets,w.rounds,w.restBetweenRounds]=T;render();return}
+  if(tpl){const w=S.draft,x=w.exercises[0];const T={tabata:[8,20,10,8,1,0],emom:[8,45,15,10,1,0],'3030':[8,30,30,10,1,0],'4515':[8,45,15,6,3,60]}[tpl.dataset.tpl];[w.prep,x.dur,x.restBetweenSets,x.sets,w.rounds,w.restBetweenRounds]=T;render();return}
   const col=e.target.closest('[data-color]');if(col){S.draft.color=col.dataset.color;render();return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   switch(a){

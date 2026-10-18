@@ -217,7 +217,9 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .body .mp>*{fill:var(--phase)}
 .body .ms>*{fill:var(--phase);opacity:.4}
 .body .mlabel{fill:var(--muted);font-size:9px}
-.focus-c{margin-top:2px}
+.focus-c{margin-top:2px;min-height:2.7em}
+.focus-c b{color:var(--fg);font-weight:600}
+.focus-src{font-size:10.5px;opacity:.8}
 .tut svg{width:140px;height:116px;flex:none}
 .fig .lim{stroke:var(--fg);stroke-width:4.5;stroke-linecap:round}
 .fig .far{opacity:.35}
@@ -639,7 +641,7 @@ function startRun(w){
 function beginInterval(i,first){
   const R=S.run;R.idx=i;const it=R.seq[i];R.endAt=Date.now()+it.dur*1000;R.remain=it.dur*1000;
   // Countdown beeps step down 3, 2, 1, once each per interval.
-  cancelBeeps();R.nextBeep=3;R.cheered=false;if(document.hidden)runNotify();
+  cancelBeeps();R.nextBeep=3;R.cheered=false;R.tipped=false;if(document.hidden)runNotify();
   if(it.kind==='work'){beepWork();const parts=[it.label+'.'];if(it.reps)parts.push(/^\d+$/.test(it.reps)?`${spokenNum(+it.reps)} reps.`:`${it.reps}.`);if(it.sets>1)parts.push(`Set ${spokenNum(it.set)} of ${spokenNum(it.sets)}.`);if(!it.next)parts.push(pick([`Last one, ${settings.nick}. Make it count.`,`Final interval. You're incredible.`]));else if(Math.random()<0.3)parts.push(pick([`Go ${settings.nick}, go.`,`You've got this.`,`Looking strong.`,`Beep beep.`]));say(parts.join(' '))}
   else if(it.kind==='prep'){if(!first)beepRest();say(`${aww()}, let's get ready!`,false,SWEET)}
   else{beepRest();const nx=it.next&&it.dur>=8?` Next up, ${it.next.label}.`:'';say((it.kind==='round'?pick([`Round ${spokenNum(it.round)} done. ${settings.nick}, you're a machine.`,`That's round ${spokenNum(it.round)}. Breathe. Drink water. Flex a little.`]):pick(['Rest.',`Rest, ${settings.nick}.`,'Breathe.','Shake it out.']))+nx)}
@@ -648,6 +650,8 @@ function tick(){
   const R=S.run;if(!R||R.paused)return;
   const now=Date.now();R.remain=R.endAt-now;
   const sec=Math.ceil(R.remain/1000);
+  // A quarter of the way into a work set of 30s+, read one form tip (cycling by set number).
+  {const it=R.seq[R.idx];if(it.kind==='work'&&it.dur>=30&&!R.tipped&&R.remain<=it.dur*750&&R.remain>it.dur*500+3000){R.tipped=true;const t=tipsFor(it.label).tips;if(t.length)say(t[((it.set||1)-1)%t.length])}}
   // Halfway through a work set of 20s or more, a word of encouragement (not too close to the countdown).
   {const it=R.seq[R.idx];if(it.kind==='work'&&it.dur>=20&&!R.cheered&&R.remain<=it.dur*500&&R.remain>5000){R.cheered=true;say(cheer(),false,SWEET)}}
   // Schedule each countdown beep a moment ahead, at the exact offset of its second boundary; skip any already passed (e.g. after resuming).
@@ -659,7 +663,7 @@ function tick(){
     let over=-R.remain,i=R.idx+1;
     while(i<R.seq.length&&over>=R.seq[i].dur*1000){over-=R.seq[i].dur*1000;i++}
     if(i>=R.seq.length){finishRun(true);return}
-    beginInterval(i);R.endAt-=over;if(over>2000)R.cheered=true;
+    beginInterval(i);R.endAt-=over;if(over>2000){R.cheered=true;R.tipped=true}
   }
   paintRun();
 }
@@ -948,6 +952,92 @@ const MUSCLE_RULES=[[/pulldown|pull.?up|chin.?up/,'lats biceps|upperback forearm
   [/hip flexor|world.?s greatest/,'quads glutes|hamstrings'],[/pigeon/,'glutes|lowerback'],[/hollow/,'abs|obliques'],[/good morning/,'hamstrings lowerback|glutes'],[/farmer|carry/,'forearms traps|abs']];
 const parseMus=str=>{const [p,s]=str.split('|');return {p:p.split(' ').filter(Boolean),s:(s||'').split(' ').filter(Boolean)}};
 function musclesFor(name){const n=(name||'').toLowerCase(),r=MUSCLE_RULES.find(([re])=>re.test(n));return parseMus(r?r[1]:MOVE_MUSCLES[moveFor(name)]||MOVE_MUSCLES.march)}
+// ---------- form tips ----------
+// Three researched form tips per movement (sources in TIP_SRC: ACE Fitness, NASM, Pilates schools and certified-trainer sites;
+// see the commit that added them). Shown in rotation on the Focus card during each exercise.
+const TIPS={
+  plank:["Stack shoulders directly over your elbows", "Keep hips level; don't sag or hike them", "Breathe steadily through the whole hold"],
+  sideplank:["Elbow directly under shoulder, feet stacked", "Brace your core to stiffen your spine", "Keep your head in line with your spine"],
+  crunch:["Exhale as you curl ribs toward pelvis", "Keep feet, tailbone, and low back on mat", "Move slowly; don't yank with hip flexors"],
+  legraise:["Press your low back flat into the floor", "Lower legs slowly; control the descent", "Keep abs braced, no rest between reps"],
+  deadbug:["Keep knees over hips, elbows over shoulders", "Inhale as opposite arm and leg lower", "Don't arch your low back or lift hips"],
+  birddog:["Hands under shoulders, knees under hips", "Keep hips and shoulders level, no rotation", "Lift limbs only as high as back stays steady"],
+  twist:["Lean back about 45 degrees, spine straight", "Rotate from your core, not swinging arms", "Keep feet planted and move with control"],
+  climber:["Hands just ahead of shoulders, core braced", "Pull shoulder blades down and back", "Don't dump your weight onto the front foot"],
+  hollow:["Press your lower back into the floor", "Lift legs and shoulders slightly, arms by ears", "Breathe steadily; bend knees to make it easier"],
+  jack:["Keep a slight knee bend; never lock out", "Land softly on every jump", "Stay tall, shoulders stacked over hips"],
+  march:["Stay upright; don't lean forward", "Drive knees above waist using lower abs", "Swing opposite arm, elbows bent 90 degrees"],
+  punch:["Tuck elbows; keep rear hand near eye level", "Rotate shoulders with your core on crosses", "Don't lean over your lead knee"],
+  sprint:["Warm up five minutes before your first sprint", "Rope: turn with your wrists, keep hops small", "Land softly on the balls of your feet"],
+  row:["Brace core and keep your back flat", "Drive your elbow back toward your hip", "Keep torso square; don't twist or shrug"],
+  renegade:["Hold a straight line from head to heels", "Keep rowing elbow tucked close to ribs", "Brace core to stop your hips rotating"],
+  revfly:["Hinge at hips, torso near parallel to floor", "Keep a slight bend in your elbows", "Squeeze shoulder blades; exhale up, lower slowly"],
+  facepull:["Keep shoulders down, chest up, wrists neutral", "Pull toward face with elbows high and wide", "Go lighter rather than shrug or lean"],
+  pullover:["Keep elbows slightly bent and pointed forward", "Brace core and glutes; keep ribs down", "Lower only as far as your back stays flat"],
+  curl:["Pin elbows to your sides; only forearms move", "Keep wrists straight and core lightly braced", "No swinging; lower slowly under control"],
+  hammer:["Keep palms facing in; don't rotate wrists", "Keep elbows close and upper arms still", "Stay tall; no rocking or half reps"],
+  wristcurl:["Rest forearm on thigh, wrist off the edge", "Move only the wrist; keep forearm still", "Squeeze at top, lower slowly, no bouncing"],
+  skull:["Keep elbows tucked, same width throughout", "Keep upper arms angled slightly back", "Lower to top of head under control"],
+  carry:["Stand tall, shoulders back and down", "Grip hard; don't let weights swing", "Brace core, breathe steadily, take short strides"],
+  swing:["Hinge at hips; knees only slightly bent", "Snap hips forward; arms just guide the bell", "Inhale on backswing, exhale as hips drive"],
+  thruster:["Keep chest up and heels down", "Squat to parallel, then drive weights overhead", "Inhale down, exhale up; never hold breath"],
+  getup:["Keep eyes on the weight the whole time", "Lock arm straight, shoulder packed down and back", "Move slowly; brace abs and breathe normally"],
+  burpee:["Hold a straight plank; don't let hips sag", "Jump feet in together, between your hands", "Land softly with knees slightly bent"],
+  squat:["Hold the weight tight against your chest", "Sit hips down while keeping chest tall", "Drive through heels and keep knees from caving"],
+  split:["Keep chest up and hips square forward", "Lower until front knee bends to 90 degrees", "Drive through front heel to stand back up"],
+  sidelunge:["Step wide, keeping both feet parallel", "Push hips back and reach toward stepping foot", "Push off stepping foot to return to center"],
+  hinge:["Push hips back with knees nearly straight", "Keep back flat; never round to go lower", "Inhale going down, exhale as you stand"],
+  goodmorning:["Keep a soft knee bend; never lock out", "Push hips back with a flat back", "Press heels down and squeeze glutes to stand"],
+  bridge:["Drive through heels, shins vertical at the top", "Keep ribs down; don't arch your lower back", "Squeeze glutes and hold one second at top"],
+  donkey:["Hands under shoulders, knees under hips", "Keep hips square; don't arch your back", "Exhale as you lift, lower slowly"],
+  sidelying:["Stack shoulders and hips; don't roll back", "Keep kneecap facing forward as you lift", "For clams, keep feet together, lift top knee"],
+  calfraise:["Push through balls of feet, heels high", "Pause briefly at the top and squeeze calves", "Lower heels slowly for a full stretch"],
+  legcurl:["Hold hips high in a straight line", "Press heels into the ball as you curl", "Roll out slowly, keeping a slight knee bend"],
+  legext:["Line your knees up with the machine pivot", "Lift two seconds, squeeze, lower two seconds", "Stop just short of locking your knees"],
+  legpress:["Keep your lower back pressed into the pad", "Track knees over toes; don't let them cave", "Stop just short of locking out your knees"],
+  boxjump:["Hinge into a mini squat, swinging arms back", "Land softly, knees bent, whole foot on box", "Step down one foot at a time"],
+  stepup:["Plant your whole lead foot on the box", "Drive through lead leg, not the back foot", "Lower slowly, reaching trailing foot to floor"],
+  floorpress:["Pull shoulder blades down and back, stay planted", "Inhale, lower slowly to mid-chest; never bounce", "Exhale and press to full extension, wrists neutral"],
+  fly:["Keep a slight bend in your elbows throughout", "Inhale and lower in a wide arc to chest", "Keep wrists neutral and dumbbells parallel"],
+  pushup:["Brace core; body straight from head to heels", "Don't let your hips sag or pike up", "Lower chest to floor, then push floor away"],
+  dip:["Keep elbows pointing back, not flared out", "Lower until elbows reach about 90 degrees", "Keep shoulders down; don't shrug or lean forward"],
+  press:["Brace core and drive feet into the floor", "Finish with hands directly above your shoulders", "Don't lean back excessively; keep back straight"],
+  lateralraise:["Lead with elbows, slightly ahead of the dumbbells", "Raise only to shoulder height, arms parallel", "Exhale up, lower slowly; don't arch lower back"],
+  frontraise:["Brace core; pull shoulders down and back", "Raise to shoulder level, elbows slightly bent", "Keep torso upright and wrists neutral; don't arch"],
+  upright:["Keep dumbbells close to your body going up", "Stop at chest or shoulder height, no higher", "No hip momentum; lower slowly with control"],
+  shrug:["Lift shoulders straight up toward your ears", "Don't roll shoulders; move straight up and down", "Keep arms straight; pause briefly at the top"],
+  pullup:["Set shoulder blades down before you pull", "Drive elbows down; pull with back, not arms", "No swinging; lower slowly until arms fully straight"],
+  pushdown:["Pin elbows close to your sides throughout", "Push down slowly until arms are fully straight", "Stand tall, hips square, knees slightly bent"],
+  cablefly:["Keep elbows soft but mostly straight throughout", "Bring hands together across midline at sternum height", "Keep torso still; no swinging or momentum"],
+  triext:["Keep elbows near ears, pointing forward, not flared", "Lower slowly behind head to about 90 degrees", "Brace core; don't arch your lower back"],
+  kickback:["Keep upper arm fixed beside your torso", "Exhale and straighten elbow fully; squeeze triceps", "Brace core; keep back flat, no rotation"],
+  hundred:["Keep arm pumps low, no higher than hips", "Inhale five pumps, exhale five pumps", "Lift shoulder blades; keep eyes on your belly"],
+  teaser:["Lift with your abs, not momentum or swing", "Keep upper spine long, lower back slightly curved", "Roll down slowly and with control"],
+  legstretch:["Exhale as you pull knee to chest", "Outside hand on ankle, inside hand on knee", "Criss-cross: twist from ribs, not shoulders"],
+  rollup:["Exhale and peel spine up bone by bone", "Press legs together, anchored to the mat", "Keep a steady pace; never jerk up"],
+  roll:["Inhale rolling back, exhale rolling up", "Roll to shoulder blades, never onto head", "Stay tight in the ball; gaze at belly"],
+  spinestretch:["Sit tall first; the lift matters too", "Exhale as you round forward", "Flex feet and keep abs lifted throughout"],
+  swan:["Lift from upper back, not lower back", "Keep pubic bone and legs pressed down", "Tuck elbows in; shoulders away from ears"],
+  swim:["Inhale five counts, exhale five counts", "Keep neck long and belly lifted", "Reach fingertips and toes far apart"],
+  legcircle:["Keep pelvis still; move only the thigh", "Bend bottom knee if back lifts", "Soften ribs and keep neck neutral"],
+  sidekick:["Keep top hip stacked over bottom hip", "Hold upper body completely still", "Keep leg at hip height; control range"],
+  catcow:["Wrists under shoulders, knees under hips", "Exhale, draw abs in, round spine up", "Let belly sink; slide shoulder blades together"],
+  child:["Widen knees and bring big toes together", "Exhale and sit hips back toward heels", "Reach arms forward; rest forehead down"],
+  downdog:["Spread fingers wide; press firmly through palms", "Shoulders away from ears, head between arms", "Bend knees as needed to keep spine long"],
+  hipflexor:["Stack front knee over front ankle", "Squeeze back glute and lean hips forward", "Brace core; don't arch your low back"],
+  pigeon:["Angle front shin, ankle toward opposite wrist", "Square hips; prop under hip if needed", "Inhale to lengthen, exhale to fold forward"]
+};
+const TIP_SRC={plank:"https://www.acefitness.org/resources/everyone/exercise-library/32/front-plank/",sideplank:"https://www.acefitness.org/resources/everyone/exercise-library/101/side-plank-with-straight-leg/",crunch:"https://www.acefitness.org/resources/everyone/exercise-library/52/crunch/",legraise:"https://fitbod.me/exercises/leg-raise",deadbug:"https://www.acefitness.org/resources/everyone/exercise-library/147/supine-dead-bug/",birddog:"https://www.acefitness.org/resources/everyone/exercise-library/14/bird-dog/",twist:"https://fitbod.me/exercises/russian-twist",climber:"https://www.acefitness.org/resources/everyone/exercise-library/258/mountain-climbers/",hollow:"https://www.strengthlog.com/?p=30590",jack:"https://experiencelife.lifetime.life/article/break-it-down-the-jumping-jack/",march:"https://www.today.com/today/amp/tdna213869",punch:"https://blog.joinfightcamp.com/training/how-to-shadowbox-5-easy-steps-for-beginner-boxers",sprint:"https://www.healthline.com/health/sprinting-workouts",row:"https://barbend.com/dumbbell-row/",renegade:"https://www.acefitness.org/resources/everyone/exercise-library/355/renegade-row/",revfly:"https://sweat.com/blogs/exercises/bent-over-reverse-fly",facepull:"https://www.garagegymreviews.com/face-pulls",pullover:"https://www.garagegymreviews.com/dumbbell-pullover",curl:"https://www.strengthlog.com/dumbbell-curl/",hammer:"https://www.strengthlog.com/hammer-curl",wristcurl:"https://www.liftosaur.com/exercises/dumbbell-wrist-curl",skull:"https://www.strengthlog.com/lying-triceps-extension/",carry:"https://barbend.com/Farmers-Carry/",swing:"https://www.acefitness.org/acefit/exercise-library-details/0/391/",thruster:"https://experiencelife.lifetime.life/article/how-to-do-the-thruster/",getup:"https://www.acefitness.org/education-and-resources/professional/prosource/november-2015/5686/ace-technique-series-turkish-get-up",burpee:"https://womensfitness.co.uk/workouts/how-to-do-burpee-form/",squat:"https://www.nasm.org/resource-center/exercise-library/goblet-squat",split:"https://www.garagegymreviews.com/bulgarian-split-squat",sidelunge:"https://www.acefitness.org/resources/everyone/exercise-library/364/lateral-lunge/",hinge:"https://www.strengthlog.com/?p=17101",goodmorning:"https://garagegymreviews.com/good-morning-exercise",bridge:"https://bretcontreras.com/10-steps-to-the-perfect-hip-thrust",donkey:"https://www.onepeloton.com/blog/donkey-kicks",sidelying:"https://www.columbiadoctors.org/health-library/multimedia/hip-abduction-lying-side/",calfraise:"https://nielasher.com/blogs/strength-and-conditioning/standing-calf-raise",legcurl:"https://motra.com/exercises/stabilityBallHamstringCurl",legext:"https://cslife.clubsports.com/trainer-tip-proper-leg-extension-form/",legpress:"https://fitbod.me/exercises/machine-leg-press",boxjump:"https://experiencelife.lifetime.life/article/break-it-down-the-box-jump/",stepup:"https://fitnessvolt.com/exercises/dumbbell-step-up/",floorpress:"https://www.acefitness.org/resources/everyone/exercise-library/19/chest-press/",fly:"https://www.acefitness.org/resources/everyone/exercise-library/21/lying-chest-fly/",pushup:"https://www.acefitness.org/resources/everyone/exercise-library/41/push-up/",dip:"https://www.nasm.org/resource-center/exercise-library/bench-dips",press:"https://barbend.com/dumbbell-shoulder-press/",lateralraise:"https://www.acefitness.org/resources/everyone/exercise-library/26/lateral-raise/",frontraise:"https://www.acefitness.org/resources/everyone/exercise-library/54/front-raise/",upright:"https://www.garagegymreviews.com/upright-row",shrug:"https://www.strengthlog.com/dumbbell-shrug/",pullup:"https://www.nasm.org/resource-center/exercise-library/pull-up",pushdown:"https://www.acefitness.org/resources/everyone/exercise-library/333/tricep-pressdown/",cablefly:"https://barbend.com/cable-crossover/",triext:"https://www.acefitness.org/resources/everyone/exercise-library/74/triceps-extension/",kickback:"https://www.acefitness.org/resources/everyone/exercise-library/55/triceps-kickback/",hundred:"https://powerpilates.com/learn/how-to-do-the-hundred-in-pilates",teaser:"https://www.clubpilates.com/blog/how-to-do-the-pilates-teaser",legstretch:"https://powerpilates.com/learn/how-to-do-a-single-leg-stretch-in-pilates",rollup:"https://powerpilates.com/learn/how-to-do-a-pilates-roll-up-properly",roll:"https://powerpilates.com/learn/how-to-perform-rolling-like-a-ball-in-pilates",spinestretch:"https://pilatesology.com/?p=308179",swan:"https://www.peakpilates.com/blogs/theteaser/exercise-spotlight-swan-i-neck-roll-1",swim:"https://pilatesology.com/pilatesology-encyclopedia-swimming",legcircle:"https://www.peakpilates.com/blogs/theteaser/movementofthemonth-one-leg-circle",sidekick:"https://pilatesology.com/?p=308250",catcow:"https://www.acefitness.org/resources/everyone/exercise-library/15/cat-cow/",child:"https://www.acefitness.org/resources/everyone/blog/5295/a-beginner-s-guide-to-yoga-5-widely-practiced-poses/",downdog:"https://www.acefitness.org/resources/everyone/exercise-library/18/downward-facing-dog/",hipflexor:"https://www.acefitness.org/resources/everyone/exercise-library/142/kneeling-hip-flexor-stretch/",pigeon:"https://www.acefitness.org/resources/pros/expert-articles/6379/5-yoga-poses-every-athlete-should-be-doing/"};
+// Which tips an exercise gets. First match wins; null = no researched tips fit this exercise, so none are shown rather
+// than a near-miss. A third value skips that many tips (e.g. bodyweight squats drop the "hold the weight" tip).
+const TIP_RULES=[[/roll down|forward fold|hamstring stretch|shoulder roll|hip circle|thoracic|open book|thread the needle|halo|around the world|tate|trx chest press|y fly|inchworm|pike|cable kickback|slam|snatch|clean|double.?leg stretch|spine twist|butt kick|skater|lateral walk|hanging/,null],
+  [/sprint|jump rope|skipping/,'sprint'],[/hamstring curl/,'legcurl'],[/leg curl/,null],[/leg extension/,'legext'],[/leg press/,'legpress'],[/box jump/,'boxjump'],[/step.?up/,'stepup'],
+  [/good morning/,'goodmorning'],[/hollow/,'hollow'],[/leg circle/,'legcircle'],[/side kick/,'sidekick'],[/hip flexor|world.?s greatest/,'hipflexor'],[/pigeon/,'pigeon'],
+  [/pulldown|pull.?up|chin.?up/,'pullup'],[/pushdown/,'pushdown'],[/face pull|pull.?apart/,'facepull'],[/cable fly/,'cablefly'],[/wrist curl/,'wristcurl'],[/hammer/,'hammer'],[/reverse curl|zottman/,'curl'],
+  [/skull/,'skull'],[/close.?grip (floor |bench )?press/,'floorpress'],[/get.?up/,'getup'],[/bulgarian|split squat/,'split'],[/goblet|front squat/,'squat'],[/squat|wall sit/,'squat',1],[/high knee|march/,'march']];
+function tipsFor(name){const n=(name||'').toLowerCase(),r=TIP_RULES.find(([re])=>re.test(n));
+  const key=r?r[1]:moveFor(name),skip=r&&r[2]||0;if(!key||(!r&&key==='march')||!TIPS[key])return {tips:[],src:''};
+  return {tips:TIPS[key].slice(skip),src:TIP_SRC[key]?new URL(TIP_SRC[key]).hostname.replace(/^www\./,''):''}}
 function tutStop(){cancelAnimationFrame(tutRAF);tutRAF=0;const box=document.getElementById('tut');if(box)box.dataset.move=''}
 function renderRun(){
   const R=S.run,it=R.seq[R.idx];
@@ -959,7 +1049,7 @@ function renderRun(){
       <div class="center"><div class="time num" id="time"></div><div class="name" id="name"></div><div class="sub" id="sub"></div></div>
     </div></div>
     <div class="progress-dots" id="dots"></div>
-    <div class="focus" id="focus" hidden><div class="focus-map" id="focus-map"></div><div class="tut-t"><span class="eyebrow">Focus on</span><b id="focus-p"></b><small id="focus-s"></small><small id="focus-c" class="focus-c"></small></div></div>
+    <div class="focus" id="focus" hidden><div class="focus-map" id="focus-map"></div><div class="tut-t"><span class="eyebrow">Focus on</span><b id="focus-p"></b><small id="focus-s"></small><small id="focus-c" class="focus-c"></small><small id="focus-src" class="focus-src"></small></div></div>
     <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small></div></div>
     <div class="next" id="next"></div>
     <div class="wt" id="wt" hidden><span class="wt-l"><span class="eyebrow">Dumbbell weight</span><b id="wt-n"></b></span><button type="button" class="wt-b" data-act="wtDec" aria-label="Decrease weight">−</button><input id="wt-in" class="num" inputmode="decimal" placeholder="–" aria-label="Weight in kilograms" autocomplete="off"><span class="wt-u">kg</span><button type="button" class="wt-b" data-act="wtInc" aria-label="Increase weight">+</button></div>
@@ -993,7 +1083,8 @@ function paintRun(full){
     {const fc=document.getElementById('focus'),on=it.kind==='work';fc.hidden=!on;
      if(on&&fc.dataset.ex!==it.label){fc.dataset.ex=it.label;const f=musclesFor(it.label);document.getElementById('focus-map').innerHTML=bodyMap(f);
        document.getElementById('focus-p').textContent=f.p.map(m=>MUSCLE_NAME[m]).join(' · ');document.getElementById('focus-s').textContent=f.s.length?`Also working: ${f.s.map(m=>MUSCLE_NAME[m]).join(', ')}`:'';
-       document.getElementById('focus-c').textContent=MOVES[moveFor(it.label)].cue}
+       R.tipSet=tipsFor(it.label);R.tipI=-1;document.getElementById('focus-src').textContent=R.tipSet.src?`Tips: ${R.tipSet.src}`:'';
+       if(!R.tipSet.tips.length)document.getElementById('focus-c').textContent=MOVES[moveFor(it.label)].cue}
      if(!on)fc.dataset.ex=''}
     const showTut=it.kind!=='work'&&!!it.next,tut=document.getElementById('tut');tut.hidden=!showTut;
     if(showTut){const n=it.next;document.getElementById('tut-e').textContent=['Up next',fmt(n.dur),n.reps?repsTxt(n.reps):''].filter(Boolean).join(' · ');document.getElementById('tut-n').textContent=n.label;document.getElementById('tut-c').textContent=MOVES[moveFor(n.label)].cue;tutStart(n.label)}else tutStop();
@@ -1003,6 +1094,9 @@ function paintRun(full){
     const works=R.seq.map((x,i)=>({x,i})).filter(o=>o.x.kind==='work');
     document.getElementById('dots').innerHTML=works.length<=40?works.map(o=>`<i class="${o.i<=R.idx?'done':''}"></i>`).join(''):'';
   }
+  // Form tips rotate every 6s during an exercise.
+  if(it.kind==='work'&&R.tipSet&&R.tipSet.tips.length){const n=R.tipSet.tips.length,el=it.dur*1000-(R.paused?R.remain:R.endAt-Date.now()),ti=Math.floor(Math.max(0,el)/6000)%n;
+    if(R.tipI!==ti){R.tipI=ti;const c=document.getElementById('focus-c');if(c)c.innerHTML=`<b>Form tip ${ti+1}/${n}</b> ${esc(R.tipSet.tips[ti])}`}}
 }
 
 function renderSummary(){

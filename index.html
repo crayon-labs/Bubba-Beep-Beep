@@ -179,6 +179,30 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .ring .sub{color:var(--muted);font-size:14px;margin-top:4px}
 .next{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:14px;min-height:22px}
 .next[hidden]{display:none}
+.wt{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 10px 8px 14px;flex:none}
+.wt[hidden]{display:none}
+.wt-l{flex:1;min-width:0;display:flex;flex-direction:column}
+.wt-l b{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wt-b{width:36px;height:36px;border-radius:50%;background:var(--surface-2);font-size:18px;flex:none}
+#wt-in{width:64px;text-align:center;font-size:18px;font-weight:600;border:0;border-radius:10px;background:var(--surface-2);padding:7px 4px}
+.wt-u{color:var(--muted);font-size:13px}
+.wt-sum{display:flex;align-items:center;gap:6px}
+.wt-sum input{width:76px;text-align:center;padding:8px 6px}
+.hist .wts{display:block;color:var(--accent);font-size:12px;margin-top:2px}
+.prog-chart{position:relative;margin:4px 0 12px}
+.prog-chart svg{width:100%;height:auto;display:block}
+.prog-chart .grid{stroke:var(--line);stroke-width:1}
+.prog-chart .axis{fill:var(--muted);font-size:11px;font-family:var(--font-num)}
+.prog-chart .line{fill:none;stroke:var(--work);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.prog-chart .dot{fill:var(--work);stroke:var(--surface);stroke-width:2}
+.prog-chart .hit{fill:transparent;cursor:pointer}
+.prog-tip{position:absolute;transform:translate(-50%,calc(-100% - 12px));background:var(--fg);color:var(--bg);border-radius:10px;padding:6px 10px;font-size:12px;white-space:nowrap;pointer-events:none;display:flex;flex-direction:column;align-items:center}
+.prog-tip.below{transform:translate(-50%,12px)}
+.prog-tip[hidden]{display:none}
+.prog-tip b{font-size:14px}
+.prog-stat{text-align:center;padding:16px 0}
+.prog-stat .big{font-size:36px;font-weight:600}
+.prog-stat p{color:var(--muted);margin:4px 0 0;font-size:14px}
 .run-extra{display:flex;justify-content:center;gap:8px;min-height:36px;flex:none}
 .run-extra .chip{font-size:14px;padding:8px 16px;font-weight:600}
 .run-extra [hidden]{display:none}
@@ -496,7 +520,7 @@ function renderAllWorkouts(){
     <div class="lib-list"><div class="card preset-list">${byRecent().map(presetRow).join('')}</div></div></div></div>`;
 }
 // History: home shows the 3 most recent sessions; "See all" lists every one in a sheet.
-const histRow=h=>`<div class="hist"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:${PH[h.color||'work'].c};flex:none"></span><span class="meta"><b>${esc(h.name)}</b><small>${new Date(h.at).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} · ${h.intervals} intervals${h.completed?'':' · ended early'}</small></span><span class="num" style="color:var(--muted)">${fmt(h.duration)}</span></div>`;
+const histRow=h=>`<div class="hist"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:${PH[h.color||'work'].c};flex:none"></span><span class="meta"><b>${esc(h.name)}</b><small>${new Date(h.at).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} · ${h.intervals} intervals${h.completed?'':' · ended early'}</small>${h.weights&&Object.keys(h.weights).length?`<small class="wts">${Object.entries(h.weights).map(([n,v])=>`${esc(n)} ${kg(v)}`).join(' · ')}</small>`:''}</span><span class="num" style="color:var(--muted)">${fmt(h.duration)}</span></div>`;
 function renderAllHistory(){
   if(!S.allH){layer.innerHTML='';return}
   layer.innerHTML=`<div class="sheet" data-act="closeHist"><div class="panel lib" data-stop>
@@ -516,7 +540,7 @@ function renderHome(){
       <div class="card preset-list">${presets.length?byRecent().slice(0,4).map(presetRow).join(''):'<div class="empty">No saved workouts yet.</div>'}</div>
       ${presets.length>4?`<button class="see-more" data-act="allWorkouts">See all ${presets.length} workouts</button>`:''}
     </div>
-    <div class="section"><div class="section-head"><h2>History</h2>${history.length?'<button class="text-btn" data-act="clearhist">Clear</button>':''}</div>
+    <div class="section"><div class="section-head"><h2>History</h2><span style="display:flex;gap:4px">${weightedNames().length?'<button class="text-btn" data-act="progress">Weight progress</button>':''}${history.length?'<button class="text-btn" data-act="clearhist">Clear</button>':''}</span></div>
       <div class="stat-row"><div class="card stat"><div class="eyebrow">Sessions</div><div class="v num">${stats.n}</div></div><div class="card stat"><div class="eyebrow">This week</div><div class="v num">${thisWeek}</div></div><div class="card stat"><div class="eyebrow">Total time</div><div class="v num">${stats.t?fmtLong(stats.t):'0m'}</div></div></div>
       <div class="card">${history.length?history.slice(0,3).map(histRow).join(''):'<div class="empty">Finished sessions appear here. First one soon?</div>'}</div>
       ${history.length>3?`<button class="see-more" data-act="allHistory">See all ${history.length} sessions</button>`:''}
@@ -593,7 +617,7 @@ function unlockScreen(){try{wake&&wake.release();wake=null}catch(e){}}
 function startRun(w){
   {const p=presets.find(x=>x.id===w.id);if(p){p.lastUsed=Date.now();store.set('cadence.presets',presets)}}
   const seq=compile(w);if(!seq.length)return;
-  S.run={w,seq,idx:0,endAt:0,remain:0,paused:false,startedAt:Date.now(),pausedMs:0,pausedAt:0,nextBeep:3,pend:[],timer:null,color:w.color||'work'};
+  S.run={w,seq,idx:0,endAt:0,remain:0,paused:false,startedAt:Date.now(),pausedMs:0,pausedAt:0,weights:{},nextBeep:3,pend:[],timer:null,color:w.color||'work'};
   ac();loadBeep();
   S.screen='run';
   beginInterval(0,true);
@@ -651,7 +675,8 @@ function finishRun(completed){
   // Paused time doesn't count, including a pause still open when the workout is ended.
   const elapsed=Math.round((Date.now()-R.startedAt-R.pausedMs-(R.paused?Date.now()-R.pausedAt:0))/1000);
   const done=completed?R.seq.length:R.idx;
-  const entry={id:uid(),name:R.w.name||'Quick timer',color:R.color,at:Date.now(),duration:elapsed,intervals:done,total:R.seq.length,completed,planned:total(R.seq),work:R.seq.filter((x,i)=>x.kind==='work'&&(completed||i<R.idx)).length};
+  const dbNames=[...new Set(R.seq.filter(x=>x.kind==='work'&&usesDB(x.label)).map(x=>x.label))],weights=Object.fromEntries(dbNames.map(n=>[n,typeof R.weights[n]==='number'?R.weights[n]:null]));
+  const entry={id:uid(),wid:R.w.id||null,weights,name:R.w.name||'Quick timer',color:R.color,at:Date.now(),duration:elapsed,intervals:done,total:R.seq.length,completed,planned:total(R.seq),work:R.seq.filter((x,i)=>x.kind==='work'&&(completed||i<R.idx)).length};
   history.unshift(entry);history=history.slice(0,100);store.set('cadence.history',history);
   if(completed){beepDone();setTimeout(()=>say(`Great work, ${aww()}!`,false,SWEET),500)}
   S.summary=entry;S.screen='summary';S.run=null;render();
@@ -822,6 +847,47 @@ function addFromLib(name){
   if(ex.length===1&&!ex[0].name.trim())ex[0]=item;else ex.push(item);
   render();toast(`Added ${name}`);
 }
+// ---------- dumbbell weights ----------
+// An exercise "uses dumbbells" if its equipment tag allows them, its name says so, or (for names outside the library)
+// its move is drawn with dumbbells and it isn't a bodyweight move.
+function usesDB(name){const n=name||'';if(EQ[n])return EQ[n].split(/[ |]/).includes('db');if(/dumbbell|weighted|goblet/i.test(n))return true;
+  const k=moveFor(n);return !!MOVES[k].db&&k!=='march'&&!/push.?up|plank|air|bodyweight|band|cable|trx|kettlebell|barbell/i.test(n)}
+const kg=v=>typeof v==='number'?`${+v.toFixed(1)} kg`:'–';
+// Most recent weight logged for this exercise in the same workout (by id, falling back to name).
+function lastWeight(w,name){for(const h of history){if((w.id?h.wid===w.id:h.name===(w.name||'Quick timer'))&&h.weights&&typeof h.weights[name]==='number')return h.weights[name]}return null}
+// The work interval a rest follows (the exercise just done).
+function prevWork(R){for(let i=R.idx-1;i>=0;i--)if(R.seq[i].kind==='work')return R.seq[i];return null}
+// Weight progress: every logged weight for an exercise, oldest first.
+function weightSeries(name){return history.filter(h=>h.weights&&typeof h.weights[name]==='number').map(h=>({at:h.at,kg:h.weights[name],w:h.name})).reverse()}
+function weightedNames(){const seen=new Map();for(const h of history)if(h.weights)for(const [n,v] of Object.entries(h.weights))if(typeof v==='number'&&!seen.has(n))seen.set(n,h.at);return [...seen.keys()]}
+function progressChart(pts){
+  if(pts.length<2)return `<div class="prog-stat"><div class="big num">${kg(pts[0].kg)}</div><p>Logged once so far. Log it in a few more sessions to see a trend.</p></div>`;
+  const W=340,H=180,L=34,R=12,T=14,B=26,x0=pts[0].at,x1=pts[pts.length-1].at,lo=Math.min(...pts.map(p=>p.kg)),hi=Math.max(...pts.map(p=>p.kg));
+  const step=Math.max(.5,Math.ceil((hi-lo||2)/3*2)/2),y0=Math.max(0,Math.floor(lo/step)*step-(lo===hi?step:0)),y1=Math.ceil(hi/step)*step+(lo===hi?step:0);
+  const X=t=>L+(x1===x0?0.5:(t-x0)/(x1-x0))*(W-L-R),Y=v=>T+(1-(v-y0)/((y1-y0)||1))*(H-T-B);
+  const ticks=[];for(let v=y0;v<=y1+1e-9;v+=step)ticks.push(+v.toFixed(1));
+  const d=pts.map((p,i)=>`${i?'L':'M'}${X(p.at).toFixed(1)},${Y(p.kg).toFixed(1)}`).join('');
+  const date=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  return `<div class="prog-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight over time, ${pts.length} sessions">
+    ${ticks.map(v=>`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="axis" x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`).join('')}
+    <text class="axis" x="${L}" y="${H-6}">${date(x0)}</text><text class="axis" x="${W-R}" y="${H-6}" text-anchor="end">${date(x1)}</text>
+    <path class="line" d="${d}"/>
+    ${pts.map((p,i)=>`<g class="pt" data-i="${i}"><circle class="hit" cx="${X(p.at)}" cy="${Y(p.kg)}" r="14"/><circle class="dot" cx="${X(p.at)}" cy="${Y(p.kg)}" r="4"/></g>`).join('')}
+  </svg><div class="prog-tip" id="prog-tip" hidden></div></div>`;
+}
+function renderProgress(){
+  if(!S.prog){layer.innerHTML='';return}
+  const names=weightedNames();if(!S.prog.ex||!names.includes(S.prog.ex))S.prog.ex=names[0];
+  const pts=S.prog.ex?weightSeries(S.prog.ex):[];
+  layer.innerHTML=`<div class="sheet" data-act="closeProg"><div class="panel lib" data-stop>
+    <div class="grab"></div><div class="lib-head"><h2 style="font-size:17px;font-weight:600">Weight progress</h2><button type="button" class="text-btn" data-act="closeProg">Done</button></div>
+    ${names.length?`<select class="text-field" data-progex aria-label="Exercise">${names.map(n=>`<option ${n===S.prog.ex?'selected':''}>${esc(n)}</option>`).join('')}</select>
+    <div class="lib-list">${progressChart(pts)}
+      <div class="card sum-list">${pts.slice().reverse().map(p=>`<div class="row"><span class="lbl"><b>${new Date(p.at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</b><small>${esc(p.w)}</small></span><span class="v num">${kg(p.kg)}</span></div>`).join('')}</div></div>`
+    :'<div class="empty">No weights logged yet. During rests after a dumbbell exercise, enter the weight you used.</div>'}
+  </div></div>`;
+  S.progPts=pts;
+}
 function tutStop(){cancelAnimationFrame(tutRAF);tutRAF=0;const box=document.getElementById('tut');if(box)box.dataset.move=''}
 function renderRun(){
   const R=S.run,it=R.seq[R.idx];
@@ -835,6 +901,7 @@ function renderRun(){
     <div class="progress-dots" id="dots"></div>
     <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small></div></div>
     <div class="next" id="next"></div>
+    <div class="wt" id="wt" hidden><span class="wt-l"><span class="eyebrow">Dumbbell weight</span><b id="wt-n"></b></span><button type="button" class="wt-b" data-act="wtDec" aria-label="Decrease weight">−</button><input id="wt-in" class="num" inputmode="decimal" placeholder="–" aria-label="Weight in kilograms" autocomplete="off"><span class="wt-u">kg</span><button type="button" class="wt-b" data-act="wtInc" aria-label="Increase weight">+</button></div>
     <div class="run-extra"><button type="button" class="chip" data-act="addRest" id="addrest">+10s rest</button><button type="button" class="chip" data-act="restartEx" id="restartex">↺ Restart exercise</button></div>
     <div class="controls"><button class="ctl" data-act="prev" aria-label="Previous interval">${I.prev}</button><button class="ctl big" data-act="pause" id="pausebtn" aria-label="Pause">${I.pause}</button><button class="ctl" data-act="skip" aria-label="Skip interval">${I.skip}</button></div>
     <div class="run-foot"><span>${esc(R.w.name||'Quick timer')}</span><button data-act="end">End workout</button></div>
@@ -855,6 +922,12 @@ function paintRun(full){
     const sub=[];if(it.kind==='work'){if(it.sets>1)sub.push(`Set ${it.set} of ${it.sets}`);if(it.reps)sub.push(repsTxt(it.reps))}
     document.getElementById('sub').textContent=sub.join(' · ');
     // During rests, demo the next move with a looping figure and a form cue.
+    // During a rest after a dumbbell exercise, ask for the weight used (prefilled from this session, else the last time this workout was done).
+    {const pw=it.kind==='rest'||it.kind==='round'?prevWork(R):null,box=document.getElementById('wt'),show=!!pw&&usesDB(pw.label);box.hidden=!show;
+     if(show&&box.dataset.ex!==pw.label){box.dataset.ex=pw.label;document.getElementById('wt-n').textContent=pw.label;
+       if(!(pw.label in R.weights)){const last=lastWeight(R.w,pw.label);if(last!==null)R.weights[pw.label]=last}
+       const v=R.weights[pw.label];document.getElementById('wt-in').value=typeof v==='number'?+v.toFixed(1):''}
+     if(!show)box.dataset.ex=''}
     const showTut=it.kind!=='work'&&!!it.next,tut=document.getElementById('tut');tut.hidden=!showTut;
     if(showTut){const n=it.next;document.getElementById('tut-e').textContent=['Up next',fmt(n.dur),n.reps?repsTxt(n.reps):''].filter(Boolean).join(' · ');document.getElementById('tut-n').textContent=n.label;document.getElementById('tut-c').textContent=MOVES[moveFor(n.label)].cue;tutStart(n.label)}else tutStop();
     document.getElementById('addrest').hidden=it.kind==='work';document.getElementById('restartex').hidden=it.kind!=='work';
@@ -877,6 +950,8 @@ function renderSummary(){
       <div class="row"><span class="lbl"><b>Planned time</b></span><span class="v num">${fmt(h.planned)}</span></div>
       <div class="row"><span class="lbl"><b>Sessions logged</b></span><span class="v num">${history.length}</span></div>
     </div>
+    ${h.weights&&Object.keys(h.weights).length?`<div class="section"><div class="section-head"><h2>Dumbbell weights</h2><span class="note">Add or fix any you missed</span></div>
+      <div class="card rows">${Object.entries(h.weights).map(([n,v])=>`<div class="row"><span class="lbl"><b>${esc(n)}</b></span><span class="wt-sum"><input class="text-field num" data-sumwt="${esc(n)}" inputmode="decimal" placeholder="–" value="${typeof v==='number'?+v.toFixed(1):''}" aria-label="${esc(n)} weight in kilograms"><span class="wt-u">kg</span></span></div>`).join('')}</div></div>`:''}
   </div>
   <div class="actionbar"><button class="btn ghost" data-act="again">Run again</button><button class="btn primary" data-act="home">Done</button></div>`;
   if(h.completed){hearts();confetti()}
@@ -897,13 +972,14 @@ function confetti(){const c=document.getElementById('confetti');if(!c||matchMedi
 function hearts(){const c=document.getElementById('hearts');if(!c||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const x=c.getContext('2d');const dpr=devicePixelRatio||1;c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.scale(dpr,dpr);const cols=['#F28CB1','#F6C453','#1E7A5C','#6E9BEE','#E26A58'];const P=Array.from({length:60},()=>({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.6,vy:1.5+Math.random()*2.5,vx:(Math.random()-.5)*1.2,s:8+Math.random()*10,r:Math.random()*6.28,c:pick(cols),h:Math.random()<.5}));let t=0;function heart(px,py,s,r){x.save();x.translate(px,py);x.rotate(r);x.scale(s/16,s/16);x.beginPath();x.moveTo(0,5);x.bezierCurveTo(-8,-3,-8,-10,0,-6);x.bezierCurveTo(8,-10,8,-3,0,5);x.fill();x.restore()}function f(){x.clearRect(0,0,innerWidth,innerHeight);let alive=false;P.forEach(p=>{p.y+=p.vy;p.x+=p.vx+Math.sin((p.y+p.r)/30)*.6;p.r+=.03;if(p.y<innerHeight+30)alive=true;x.fillStyle=p.c;if(p.h)heart(p.x,p.y,p.s,p.r);else{x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()}});t++;if(alive&&t<600)requestAnimationFrame(f);else c.remove()}requestAnimationFrame(f)}
 
 function renderSheet(){
-  if(!S.sheet){if(!S.lib&&!S.allW&&!S.allH)layer.innerHTML='';return}
+  if(!S.sheet){if(!S.lib&&!S.allW&&!S.allH&&!S.prog)layer.innerHTML='';return}
   layer.innerHTML=`<div class="sheet" data-act="closeSheet"><div class="panel" data-stop>
     <div class="grab"></div><h2 style="font-size:17px;font-weight:600">Cues</h2>
     <div class="card rows">
       <div class="row"><span class="lbl"><b>Sound</b><small>Beeps at every transition</small></span><button class="toggle" role="switch" aria-checked="${settings.sound}" data-set="sound" aria-label="Sound"></button></div>
       <div class="row"><span class="lbl"><b>Sound on silent</b><small>Beeps even with the silent switch on, but pauses Spotify and other music</small></span><button class="toggle" role="switch" aria-checked="${!!settings.loud}" data-set="loud" aria-label="Sound on silent"></button></div>
       <div class="row"><span class="lbl"><b>Notification when you leave</b><small>Shows the current step and when it ends if you switch apps mid-workout. On iPhone, add the app to your Home Screen first.</small></span><button class="toggle" role="switch" aria-checked="${!!settings.notify}" data-set="notify" aria-label="Notification when you leave"></button></div>
+      <div class="row"><span class="lbl"><b>Test sounds</b><small>Plays the 3-2-1 countdown. Silent? Check the ringer switch, or turn on Sound on silent.</small></span><button type="button" class="btn" data-act="testBeep" style="flex:0 0 auto;padding:10px 16px">Play</button></div>
       <div class="row"><span class="lbl"><b>3-2-1 countdown</b><small>Says “beep” on each of the last 3 seconds</small></span><button class="toggle" role="switch" aria-checked="${settings.countdown}" data-set="countdown" aria-label="Countdown"></button></div>
       <div class="row"><span class="lbl"><b>Voice</b><small>Speaks exercise, reps and what's next</small></span><button class="toggle" role="switch" aria-checked="${settings.voice}" data-set="voice" aria-label="Voice"></button></div>
       ${VOICES.length?`<div class="row" style="padding-bottom:8px"><span class="lbl"><b>Voice tone</b><small>${VOICES.length} English voices on this device</small></span></div>
@@ -967,6 +1043,8 @@ app.addEventListener('click',e=>{
     case 'start':startRun(JSON.parse(JSON.stringify(S.draft)));break;
     case 'pause':togglePause();break;
     case 'addRest':addRest();break;
+    case 'wtInc':case 'wtDec':{const R=S.run,ex=document.getElementById('wt').dataset.ex;if(!R||!ex)break;const cur=typeof R.weights[ex]==='number'?R.weights[ex]:0;R.weights[ex]=Math.max(0,cur+(a==='wtInc'?1:-1));document.getElementById('wt-in').value=+R.weights[ex].toFixed(1);break}
+    case 'progress':S.prog={ex:null};renderProgress();break;
     case 'restartEx':restartEx();break;
     case 'skip':skip(1);break;
     // Previous restarts the current interval if more than 3s in (or on the first one), otherwise goes back one.
@@ -980,7 +1058,10 @@ app.addEventListener('click',e=>{
 const isExName=el=>el&&el.matches&&el.matches('.ex-head input[data-text]');
 app.addEventListener('focusin',e=>{if(isExName(e.target))showSuggest(e.target)});
 app.addEventListener('focusout',e=>{if(isExName(e.target))setTimeout(()=>{if(!isExName(document.activeElement))closeSuggest()},250)});
-app.addEventListener('input',e=>{const inp=e.target;if(!isExName(inp))return;showSuggest(inp);inp.closest('.ex-head').querySelector('.ex-fig').innerHTML=figSVG(inp.value)});
+app.addEventListener('input',e=>{const inp=e.target;
+  if(inp.id==='wt-in'&&S.run){const ex=document.getElementById('wt').dataset.ex,v=parseFloat(inp.value.replace(',','.'));if(ex)S.run.weights[ex]=isNaN(v)?null:Math.max(0,v);return}
+  if(inp.matches('[data-sumwt]')&&S.summary){const v=parseFloat(inp.value.replace(',','.'));S.summary.weights[inp.dataset.sumwt]=isNaN(v)?null:Math.max(0,v);store.set('cadence.history',history);return}
+  if(!isExName(inp))return;showSuggest(inp);inp.closest('.ex-head').querySelector('.ex-fig').innerHTML=figSVG(inp.value)});
 app.addEventListener('click',e=>{if(isExName(e.target)&&!e.target.closest('.ex-head').querySelector('.suggest')){showSuggest(e.target);return}const pk=e.target.closest('[data-pick]');if(!pk)return;
   const inp=pk.closest('.ex-head').querySelector('input');inp.value=pk.dataset.pick;setPath(S.draft,inp.dataset.text,inp.value);
   inp.closest('.ex-head').querySelector('.ex-fig').innerHTML=figSVG(inp.value);closeSuggest();inp.blur();
@@ -993,8 +1074,15 @@ app.addEventListener('change',e=>{
 });
 app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==='Enter'&&e.target.id==='welcome-name'){e.preventDefault();app.querySelector('[data-act="welcomeName"]').click();return}if(e.key==='Enter'&&e.target.matches('input'))e.target.blur()});
 layer.addEventListener('change',e=>{if(e.target.matches('[data-nick]')){settings.nick=e.target.value.trim()||'Bubba';store.set('cadence.settings',settings);return}if(e.target.matches('[data-voice]')){settings.voiceURI=e.target.value;store.set('cadence.settings',settings);say('Rest. Next up, air squats.',true)}});
+layer.addEventListener('change',e=>{if(e.target.matches('[data-progex]')&&S.prog){S.prog.ex=e.target.value;renderProgress()}});
 layer.addEventListener('input',e=>{if(e.target.matches('[data-libq]')&&S.lib){S.lib.q=e.target.value;document.getElementById('lib-list').innerHTML=libListHTML()}});
 layer.addEventListener('click',e=>{
+  if(S.prog){const pt=e.target.closest('.pt');if(pt){const p=S.progPts[+pt.dataset.i],tip=document.getElementById('prog-tip'),c=pt.querySelector('.dot'),box=pt.closest('svg').getBoundingClientRect(),vb=pt.closest('svg').viewBox.baseVal;
+      tip.hidden=false;tip.innerHTML=`<b class="num">${kg(p.kg)}</b><span>${new Date(p.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${esc(p.w)}</span>`;
+      // Keep the tooltip inside the chart: clamp horizontally, and show it below points near the top.
+      const px=(c.cx.baseVal.value/vb.width)*box.width,py=(c.cy.baseVal.value/vb.height)*box.height,half=tip.offsetWidth/2+4;
+      tip.style.left=`${Math.min(box.width-half,Math.max(half,px))}px`;tip.style.top=`${py}px`;tip.classList.toggle('below',py<box.height*.4);return}
+    if(e.target.closest('.lib-head [data-act="closeProg"]')||e.target.matches('.sheet[data-act="closeProg"]')){S.prog=null;renderProgress()}return}
   if(S.allH){if(e.target.closest('.lib-head [data-act="closeHist"]')||e.target.matches('.sheet[data-act="closeHist"]')){S.allH=false;renderAllHistory()}return}
   if(S.allW){const o=e.target.closest('[data-act="open"]');if(o){S.allW=false;layer.innerHTML='';openPreset(o.dataset.id);return}
     if(e.target.closest('.lib-head [data-act="closeAll"]')||e.target.matches('.sheet[data-act="closeAll"]')){S.allW=false;renderAllWorkouts()}
@@ -1009,6 +1097,7 @@ layer.addEventListener('click',e=>{
     if(sw.dataset.set==='notify'&&settings.notify){if(!('Notification' in window)){settings.notify=false;store.set('cadence.settings',settings);toast('Add the app to your Home Screen to allow notifications')}
       else Notification.requestPermission().then(r=>{if(r!=='granted'){settings.notify=false;store.set('cadence.settings',settings);toast('Notifications are blocked in your settings');renderSheet()}}).catch(()=>{})}
     renderSheet();return}
+  if(e.target.closest('[data-act="testBeep"]')){ac();loadBeep();setTimeout(()=>{beepAt(3,0);beepAt(2,1);beepAt(1,2)},300);return}
   if(e.target.closest('[data-act="previewVoice"]')){say(`Push-ups. Twelve reps. Set two of three. Go ${settings.nick}, go.`,true);return}
   if(e.target.closest('[data-act="closeSheet"]')&&!e.target.closest('[data-stop]')||e.target.closest('.panel [data-act="closeSheet"]')){S.sheet=false;renderSheet()}
 });

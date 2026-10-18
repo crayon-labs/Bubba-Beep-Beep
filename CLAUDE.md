@@ -26,6 +26,8 @@ A personal HIIT / interval timer web app, built as a gift. Single static page, n
 - Previous works like a music player: more than 3s into the interval (or on the first interval) it restarts the current one (`skip(0)`), otherwise it goes back one (`skip(-1)`).
 - Haptics: `vib()` buzzes on work start, rest and finish (and on arming End). iOS Safari ignores `navigator.vibrate`, so this is Android only.
 - Update toast: when a new service worker installs over an existing one, a persistent "New version ready · Tap to update" toast reloads the page. Bumping the cache name in `sw.js` is still what triggers it.
+- Dumbbell weights: `usesDB(name)` (equipment tag, name, or a dumbbell drawn on a non-bodyweight move) decides which exercises log weight. During a rest after one, the run screen asks for the kg used (`R.weights`), prefilled from this session or `lastWeight()` (same workout id, else name). History entries store `wid` and `weights` (null = not entered, shown as –); the summary screen lets you fill in or fix them. History → "Weight progress" charts one exercise's weight over time (single-series SVG line, tap a point for its value, table below).
+- Settings → Test sounds plays the 3-2-1 countdown, to check the silent switch / Sound on silent.
 - Persistence: `localStorage` keys `cadence.presets`, `cadence.history`, `cadence.settings`. Wrapped in try/catch; the app must work without storage.
 - Theme: all colours are CSS tokens on `:root` with dark overrides via `prefers-color-scheme` and `[data-theme]`. Phase colours: prep amber, work green, rest blue, round-break purple.
 - Fonts: Instrument Sans for UI, Inter (tabular nums) for every number via the `.num` class.

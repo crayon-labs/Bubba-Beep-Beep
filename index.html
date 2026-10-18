@@ -459,11 +459,21 @@ function timelineHTML(w){const seq=compile(w),t=total(seq);if(!t)return `<div cl
   return `<div class="timeline"><div class="tl-total"><div><span class="eyebrow">Total time</span><div style="font-size:12.5px;color:var(--muted)">${work.length} work intervals · ${fmtLong(total(work))} working</div></div><span class="t num">${fmt(t)}</span></div><div class="tl-bar">${bar}</div><div class="tl-legend">${kinds.map(k=>`<span><i style="background:${PH[k].c}"></i>${PH[k].n}</span>`).join('')}</div></div>`}
 
 // ---------- screens ----------
-// Welcome: pick equipment before anything else, so the library only offers moves the user can do.
+// Welcome (first run): step 1 asks for a name (default Bubba), step 2 picks equipment so the library only offers moves the user can do.
 function renderWelcome(){
+  if(S.welcomeStep!=='equip'){
+    app.innerHTML=`
+    <div class="scroll welcome">
+      <div class="welcome-hero"><img src="icon-192.png" alt="" width="72" height="72"><h1>Hi! What should we call you?</h1><p>Your name is used in the voice cues and cheers during workouts.</p></div>
+      <input class="text-field" id="welcome-name" value="${esc(settings.nick)}" placeholder="Bubba" autocomplete="given-name" aria-label="Your name">
+    </div>
+    <div class="actionbar"><button class="btn primary" data-act="welcomeName">Continue</button></div>`;
+    return;
+  }
   app.innerHTML=`
-  <div class="scroll welcome">
-    <div class="welcome-hero"><img src="icon-192.png" alt="" width="72" height="72"><h1>Hi ${esc(settings.nick)}! What equipment do you have?</h1><p>Pick everything you can use. The exercise library will only show moves you can do. Bodyweight moves are always included, and you can change this later in Settings.</p></div>
+  <div class="topbar"><button class="icon-btn" data-act="welcomeBack" aria-label="Back">${I.back}</button><h1></h1></div>
+  <div class="scroll welcome" style="padding-top:4px">
+    <div class="welcome-hero"><h1>Nice to meet you, ${esc(settings.nick)}! What equipment do you have?</h1><p>Pick everything you can use. The exercise library will only show moves you can do. Bodyweight moves are always included, and you can change this later in Settings.</p></div>
     <div class="chip-set eq-set">${EQUIP.map(([k,n])=>`<button type="button" class="chip" data-eq="${k}" aria-pressed="${settings.equip.includes(k)}">${n}</button>`).join('')}</div>
   </div>
   <div class="actionbar"><button class="btn primary" data-act="finishWelcome" id="welcome-go">${settings.equip.length?'Continue':'Continue with bodyweight only'}</button></div>`;
@@ -880,6 +890,8 @@ app.addEventListener('click',e=>{
     case 'new':S.draftMode='builder';S.draft=newDraft('builder');S.editingId=null;S.screen='builder';render();break;
     case 'toBuilder':S.draftMode='builder';S.draft.name=S.draft.name==='Quick timer'?'':S.draft.name;S.screen='builder';render();break;
     case 'open':{const p=presets.find(x=>x.id===b.dataset.id);S.draft=JSON.parse(JSON.stringify(p));S.editingId=p.id;S.draftMode='builder';S.screen='builder';render();break}
+    case 'welcomeName':{const v=(document.getElementById('welcome-name').value||'').trim();settings.nick=v||'Bubba';store.set('cadence.settings',settings);S.welcomeStep='equip';render();break}
+    case 'welcomeBack':S.welcomeStep='name';render();break;
     case 'finishWelcome':store.set('cadence.onboarded',true);store.set('cadence.settings',settings);S.screen='home';render();break;
     case 'openLib':S.lib={part:'All',q:''};renderLib();break;
     case 'addEx':S.draft.exercises.push({id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15});render();setTimeout(()=>{const inp=app.querySelector(`.ex:last-of-type input[data-text]`);inp&&inp.focus()},0);break;
@@ -908,7 +920,7 @@ app.addEventListener('change',e=>{
   const st=inp.closest('[data-stepper]');
   if(st&&inp.matches('.val')){const v=parseTime(inp.value);if(v===null){render();return}setPath(S.draft,st.dataset.stepper,Math.max(+st.dataset.min,v));render()}
 });
-app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==='Enter'&&e.target.matches('input'))e.target.blur()});
+app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==='Enter'&&e.target.id==='welcome-name'){e.preventDefault();app.querySelector('[data-act="welcomeName"]').click();return}if(e.key==='Enter'&&e.target.matches('input'))e.target.blur()});
 layer.addEventListener('change',e=>{if(e.target.matches('[data-nick]')){settings.nick=e.target.value.trim()||'Bubba';store.set('cadence.settings',settings);return}if(e.target.matches('[data-voice]')){settings.voiceURI=e.target.value;store.set('cadence.settings',settings);say('Rest. Next up, air squats.',true)}});
 layer.addEventListener('input',e=>{if(e.target.matches('[data-libq]')&&S.lib){S.lib.q=e.target.value;document.getElementById('lib-list').innerHTML=libListHTML()}});
 layer.addEventListener('click',e=>{

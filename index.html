@@ -70,6 +70,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .btn.primary{background:var(--accent);color:var(--accent-fg)}
 .btn.ghost{background:transparent;border:1px solid var(--line)}
 .btn.danger{color:var(--danger)}
+.btn.danger-solid{background:var(--danger);color:#fff}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 
 .card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -541,6 +542,16 @@ function renderAllHistory(){
     <div class="grab"></div><div class="lib-head"><h2 style="font-size:17px;font-weight:600">History</h2><button type="button" class="text-btn" data-act="closeHist">Done</button></div>
     <div class="lib-list"><div class="card">${history.map(histRow).join('')}</div></div></div></div>`;
 }
+// Clearing history deletes every session and logged weight, so it asks first.
+function renderConfirmClear(){
+  if(!S.confirmClear){layer.innerHTML='';return}
+  const n=history.length,w=history.filter(h=>h.weights&&Object.values(h.weights).some(v=>typeof v==='number')).length;
+  layer.innerHTML=`<div class="sheet" data-act="cancelClear"><div class="panel" data-stop role="alertdialog" aria-labelledby="cc-t" aria-describedby="cc-d">
+    <div class="grab"></div><h2 id="cc-t" style="font-size:18px;font-weight:600">Clear all history?</h2>
+    <p id="cc-d" class="note" style="font-size:14px;margin:0">This permanently deletes ${n} session${n===1?'':'s'}${w?`, including the weights logged in ${w}, so your Weight progress chart will be empty`:''}. It can't be undone.</p>
+    <div style="display:flex;gap:10px"><button type="button" class="btn" data-act="cancelClear">Cancel</button><button type="button" class="btn danger-solid" data-act="confirmClear">Clear history</button></div>
+  </div></div>`;
+}
 function openPreset(id){const p=presets.find(x=>x.id===id);if(!p)return;S.draft=JSON.parse(JSON.stringify(p));S.editingId=p.id;S.draftMode='builder';S.screen='builder';render()}
 function renderHome(){
   const stats=history.reduce((a,h)=>{a.n++;a.t+=h.duration;return a},{n:0,t:0});
@@ -897,7 +908,7 @@ function renderProgress(){
   const pts=S.prog.ex?weightSeries(S.prog.ex):[];
   layer.innerHTML=`<div class="sheet" data-act="closeProg"><div class="panel lib" data-stop>
     <div class="grab"></div><div class="lib-head"><h2 style="font-size:17px;font-weight:600">Weight progress</h2><button type="button" class="text-btn" data-act="closeProg">Done</button></div>
-    ${names.length?`<select class="text-field" data-progex aria-label="Exercise">${names.map(n=>`<option ${n===S.prog.ex?'selected':''}>${esc(n)}</option>`).join('')}</select>
+    ${names.length?`<div class="lib-parts" role="tablist" aria-label="Exercise">${names.map(n=>`<button type="button" class="chip" role="tab" data-progex="${esc(n)}" aria-pressed="${n===S.prog.ex}">${esc(n)}</button>`).join('')}</div>
     <div class="lib-list">${progressChart(pts)}
       <div class="card sum-list">${pts.slice().reverse().map(p=>`<div class="row"><span class="lbl"><b>${new Date(p.at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</b><small>${esc(p.w)}</small></span><span class="v num">${kg(p.kg)}</span></div>`).join('')}</div></div>`
     :'<div class="empty">No weights logged yet. During rests after a dumbbell exercise, enter the weight you used.</div>'}
@@ -1166,7 +1177,7 @@ function confetti(){const c=document.getElementById('confetti');if(!c||matchMedi
 function hearts(){const c=document.getElementById('hearts');if(!c||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const x=c.getContext('2d');const dpr=devicePixelRatio||1;c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.scale(dpr,dpr);const cols=['#F28CB1','#F6C453','#1E7A5C','#6E9BEE','#E26A58'];const P=Array.from({length:60},()=>({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.6,vy:1.5+Math.random()*2.5,vx:(Math.random()-.5)*1.2,s:8+Math.random()*10,r:Math.random()*6.28,c:pick(cols),h:Math.random()<.5}));let t=0;function heart(px,py,s,r){x.save();x.translate(px,py);x.rotate(r);x.scale(s/16,s/16);x.beginPath();x.moveTo(0,5);x.bezierCurveTo(-8,-3,-8,-10,0,-6);x.bezierCurveTo(8,-10,8,-3,0,5);x.fill();x.restore()}function f(){x.clearRect(0,0,innerWidth,innerHeight);let alive=false;P.forEach(p=>{p.y+=p.vy;p.x+=p.vx+Math.sin((p.y+p.r)/30)*.6;p.r+=.03;if(p.y<innerHeight+30)alive=true;x.fillStyle=p.c;if(p.h)heart(p.x,p.y,p.s,p.r);else{x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()}});t++;if(alive&&t<600)requestAnimationFrame(f);else c.remove()}requestAnimationFrame(f)}
 
 function renderSheet(){
-  if(!S.sheet){if(!S.lib&&!S.allW&&!S.allH&&!S.prog)layer.innerHTML='';return}
+  if(!S.sheet){if(!S.lib&&!S.allW&&!S.allH&&!S.prog&&!S.confirmClear)layer.innerHTML='';return}
   layer.innerHTML=`<div class="sheet" data-act="closeSheet"><div class="panel" data-stop>
     <div class="grab"></div><div class="lib-head"><h2 style="font-size:20px;font-weight:600">Settings</h2><button type="button" class="icon-btn" data-act="closeSheet" aria-label="Close settings">${I.x}</button></div>
     <h2 style="font-size:17px;font-weight:600">Cues</h2>
@@ -1247,7 +1258,7 @@ app.addEventListener('click',e=>{
     // Two taps to end: the first arms the button for 3s, a second tap within that window ends the workout.
     case 'end':if(b.dataset.armed){clearTimeout(S.endArm);S.endArm=null;finishRun(false)}else{b.dataset.armed='1';b.textContent='Tap again to end';vib(40);S.endArm=setTimeout(()=>{delete b.dataset.armed;b.textContent='End workout';S.endArm=null},3000)}break;
     case 'again':startRun(S.draft);break;
-    case 'clearhist':history=[];store.set('cadence.history',history);render();break;
+    case 'clearhist':S.confirmClear=true;renderConfirmClear();break;
   }
 });
 const isExName=el=>el&&el.matches&&el.matches('.ex-head input[data-text]');
@@ -1272,10 +1283,12 @@ app.addEventListener('change',e=>{
 });
 app.addEventListener('keydown',e=>{if(e.key==='Escape')closeSuggest();if(e.key==='Enter'&&e.target.id==='welcome-name'){e.preventDefault();app.querySelector('[data-act="welcomeName"]').click();return}if(e.key==='Enter'&&e.target.matches('input'))e.target.blur()});
 layer.addEventListener('change',e=>{if(e.target.matches('[data-nick]')){settings.nick=e.target.value.trim()||'Bubba';store.set('cadence.settings',settings);return}if(e.target.matches('[data-voice]')){settings.voiceURI=e.target.value;store.set('cadence.settings',settings);say('Rest. Next up, air squats.',true)}});
-layer.addEventListener('change',e=>{if(e.target.matches('[data-progex]')&&S.prog){S.prog.ex=e.target.value;renderProgress()}});
 layer.addEventListener('input',e=>{if(e.target.matches('[data-libq]')&&S.lib){S.lib.q=e.target.value;document.getElementById('lib-list').innerHTML=libListHTML()}});
 layer.addEventListener('click',e=>{
-  if(S.prog){const pt=e.target.closest('.pt');if(pt){const p=S.progPts[+pt.dataset.i],tip=document.getElementById('prog-tip'),c=pt.querySelector('.dot'),box=pt.closest('svg').getBoundingClientRect(),vb=pt.closest('svg').viewBox.baseVal;
+  if(S.confirmClear){if(e.target.closest('[data-act="confirmClear"]')){history=[];store.set('cadence.history',history);S.confirmClear=false;layer.innerHTML='';render();toast('History cleared');return}
+    if(e.target.closest('.panel [data-act="cancelClear"]')||e.target.matches('.sheet[data-act="cancelClear"]')){S.confirmClear=false;renderConfirmClear()}return}
+  if(S.prog){const px=e.target.closest('[data-progex]');if(px){S.prog.ex=px.dataset.progex;const sx=layer.querySelector('.lib-parts').scrollLeft;renderProgress();layer.querySelector('.lib-parts').scrollLeft=sx;return}
+    const pt=e.target.closest('.pt');if(pt){const p=S.progPts[+pt.dataset.i],tip=document.getElementById('prog-tip'),c=pt.querySelector('.dot'),box=pt.closest('svg').getBoundingClientRect(),vb=pt.closest('svg').viewBox.baseVal;
       tip.hidden=false;tip.innerHTML=`<b class="num">${kg(p.kg)}</b><span>${new Date(p.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${esc(p.w)}</span>`;
       // Keep the tooltip inside the chart: clamp horizontally, and show it below points near the top.
       const px=(c.cx.baseVal.value/vb.width)*box.width,py=(c.cy.baseVal.value/vb.height)*box.height,half=tip.offsetWidth/2+4;

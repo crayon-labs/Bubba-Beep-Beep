@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed square: iOS and Android apply their own corner mask. Artwork stays inside the maskable safe zone. -->
+  <rect width="512" height="512" fill="#1F7A5A"/>
+  <rect x="244" y="116" width="24" height="26" fill="#FFFFFF"/>
+  <rect x="222" y="94" width="68" height="32" rx="10" fill="#FFFFFF"/>
+  <rect x="350" y="152" width="44" height="26" rx="8" fill="#FFFFFF" transform="rotate(45 372 165)"/>
+  <circle cx="256" cy="284" r="150" fill="#FFFFFF"/>
+  <path d="M256 134 A150 150 0 0 1 406 284 L256 284 Z" fill="#F2B544"/>
+  <circle cx="205" cy="266" r="18" fill="#1B1B1B"/>
+  <circle cx="307" cy="266" r="18" fill="#1B1B1B"/>
+  <circle cx="211" cy="260" r="6" fill="#FFFFFF"/>
+  <circle cx="313" cy="260" r="6" fill="#FFFFFF"/>
+  <path d="M214 320 Q256 362 298 320" fill="none" stroke="#1B1B1B" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="169" cy="320" r="18" fill="#F7A8B8"/>
+  <circle cx="343" cy="320" r="18" fill="#F7A8B8"/>
+</svg>

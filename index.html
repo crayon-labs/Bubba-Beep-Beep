@@ -167,16 +167,17 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .run-top .total small{color:var(--muted);font-size:12px}
 .phase-pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;background:var(--phase-soft);color:var(--phase)}
 .phase-pill i{width:8px;height:8px;border-radius:50%;background:var(--phase)}
-.ring-wrap{flex:1;min-height:0;display:grid;place-items:center}
-.ring{position:relative;height:min(78vw,340px,100%);aspect-ratio:1;max-width:100%}
+/* The ring fills whatever height is left after the cards, never more: the wrap is a size container and the ring uses its units. */
+.ring-wrap{flex:1;min-height:0;display:grid;place-items:center;container-type:size}
+.ring{position:relative;width:min(100cqw,100cqh,340px);height:min(100cqw,100cqh,340px);container-type:size}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring .track{stroke:var(--surface-2)}
 .ring .prog{stroke:var(--phase);transition:stroke-dashoffset .12s linear}
 @media (prefers-reduced-motion: reduce){.ring .prog{transition:none}.btn{transition:none}}
 .ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12%}
-.ring .time{font-size:clamp(56px,20vw,88px);font-weight:500;line-height:1;letter-spacing:-.02em}
-.ring .name{font-size:clamp(17px,4.6vw,21px);font-weight:600;margin-top:10px;max-width:100%;overflow-wrap:anywhere}
-.ring .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.ring .time{font-size:clamp(30px,26cqw,88px);font-weight:500;line-height:1;letter-spacing:-.02em}
+.ring .name{font-size:clamp(12px,7cqw,21px);font-weight:600;margin-top:min(10px,3cqw);max-width:100%;overflow-wrap:anywhere}
+.ring .sub{color:var(--muted);font-size:clamp(10px,5cqw,14px);margin-top:4px}
 .next{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:14px;min-height:22px}
 .next[hidden]{display:none}
 .wt{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 10px 8px 14px;flex:none}
@@ -1091,6 +1092,8 @@ function renderRun(){
 }
 function paintRun(full){
   const R=S.run;if(!R||S.screen!=='run')return;const it=R.seq[R.idx];
+  // Any change of interval (natural, skip, catch-up) gets a full repaint of the name, phase, cards and buttons.
+  if(R.paintedIdx!==R.idx){full=true;R.paintedIdx=R.idx}
   const remainS=Math.max(0,R.remain/1000);
   const t=document.getElementById('time');if(!t)return;
   t.textContent=fmt(Math.ceil(remainS));

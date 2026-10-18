@@ -468,7 +468,7 @@ function unlockScreen(){try{wake&&wake.release();wake=null}catch(e){}}
 
 function startRun(w){
   const seq=compile(w);if(!seq.length)return;
-  S.run={w,seq,idx:0,endAt:0,remain:0,paused:false,startedAt:Date.now(),lastSec:null,timer:null,color:w.color||'work'};
+  S.run={w,seq,idx:0,endAt:0,remain:0,paused:false,startedAt:Date.now(),nextBeep:3,lead:0,timer:null,color:w.color||'work'};
   ac();
   S.screen='run';
   beginInterval(0,true);
@@ -477,7 +477,9 @@ function startRun(w){
   render();
 }
 function beginInterval(i,first){
-  const R=S.run;R.idx=i;const it=R.seq[i];R.endAt=Date.now()+it.dur*1000;R.remain=it.dur*1000;R.lastSec=null;
+  const R=S.run;R.idx=i;const it=R.seq[i];R.endAt=Date.now()+it.dur*1000;R.remain=it.dur*1000;
+  // Countdown beeps only ever step down 3, 2, 1, using a speech delay fixed for the whole interval so a new measurement can't re-trigger a second.
+  R.nextBeep=3;R.lead=settings.voice&&'speechSynthesis' in window?beepLead:0;
   if(it.kind==='work'){beepWork();const parts=[it.label+'.'];if(it.reps)parts.push(/^\d+$/.test(it.reps)?`${spokenNum(+it.reps)} reps.`:`${it.reps}.`);if(it.sets>1)parts.push(`Set ${spokenNum(it.set)} of ${spokenNum(it.sets)}.`);if(!it.next)parts.push(pick([`Last one, ${settings.nick}. Make it count.`,`Final interval. You're incredible.`]));else if(Math.random()<0.3)parts.push(pick([`Go ${settings.nick}, go.`,`You've got this.`,`Looking strong.`,`Beep beep.`]));say(parts.join(' '))}
   else if(it.kind==='prep'){if(!first)beepRest();say(`${aww()}, let's get ready!`,false,SWEET)}
   else{beepRest();const nx=it.next&&it.dur>=8?` Next up, ${it.next.label}.`:'';say((it.kind==='round'?pick([`Round ${spokenNum(it.round)} done. ${settings.nick}, you're a machine.`,`That's round ${spokenNum(it.round)}. Breathe. Drink water. Flex a little.`]):pick(['Rest.',`Rest, ${settings.nick}.`,'Breathe.','Shake it out.']))+nx)}
@@ -486,9 +488,8 @@ function tick(){
   const R=S.run;if(!R||R.paused)return;
   const now=Date.now();R.remain=R.endAt-now;
   const sec=Math.ceil(R.remain/1000);
-  const lead=settings.voice&&'speechSynthesis' in window?beepLead:0,bsec=Math.ceil((R.remain-lead)/1000);
-  if(settings.countdown&&bsec!==R.lastSec&&bsec>=1&&bsec<=3&&R.seq[R.idx].dur>3){beepShort(bsec)}
-  R.lastSec=bsec;
+  const bsec=Math.ceil((R.remain-R.lead)/1000);
+  if(settings.countdown&&bsec>=1&&bsec<=R.nextBeep&&R.seq[R.idx].dur>3){beepShort(bsec);R.nextBeep=bsec-1}
   if(R.remain<=0){
     if(R.idx+1>=R.seq.length){finishRun(true);return}
     // carry overshoot so drift doesn't accumulate

@@ -156,7 +156,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .phase-pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;background:var(--phase-soft);color:var(--phase)}
 .phase-pill i{width:8px;height:8px;border-radius:50%;background:var(--phase)}
 .ring-wrap{flex:1;min-height:0;display:grid;place-items:center}
-.ring{position:relative;width:min(78vw,340px,100%);aspect-ratio:1;max-width:100%}
+.ring{position:relative;height:min(78vw,340px,100%);aspect-ratio:1;max-width:100%}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring .track{stroke:var(--surface-2)}
 .ring .prog{stroke:var(--phase);transition:stroke-dashoffset .12s linear}
@@ -166,6 +166,18 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .ring .name{font-size:clamp(17px,4.6vw,21px);font-weight:600;margin-top:10px;max-width:100%;overflow-wrap:anywhere}
 .ring .sub{color:var(--muted);font-size:14px;margin-top:4px}
 .next{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:14px;min-height:22px}
+.next[hidden]{display:none}
+.tut{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 14px 8px 8px;flex:none}
+.tut[hidden]{display:none}
+.tut svg{width:140px;height:116px;flex:none}
+.tut .lim{stroke:var(--fg);stroke-width:4.5;stroke-linecap:round}
+.tut .far{opacity:.35}
+.tut .head{fill:var(--fg)}
+.tut .db{fill:var(--phase)}
+.tut .gnd{stroke:var(--line);stroke-width:2;stroke-linecap:round}
+.tut-t{min-width:0;display:flex;flex-direction:column;gap:2px}
+.tut-t b{font-weight:600;font-size:16px;line-height:1.25;overflow-wrap:break-word}
+.tut-t small{color:var(--muted);font-size:13px;line-height:1.35}
 .next b{color:var(--fg);font-weight:600}
 .controls{display:flex;align-items:center;justify-content:center;gap:16px}
 .ctl{width:54px;height:54px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--fg)}
@@ -231,11 +243,53 @@ const SEED=[
    exercises:[
     {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'10',restBetweenSets:45},
     {id:uid(),name:'Single-arm row',dur:40,sets:3,reps:'8 each side',restBetweenSets:30},
-    {id:uid(),name:'KB swing',dur:30,sets:4,reps:'15',restBetweenSets:30}]}
+    {id:uid(),name:'KB swing',dur:30,sets:4,reps:'15',restBetweenSets:30}]},
+  // Pilates-strength set: dumbbell work with slow lowering and weighted Pilates moves.
+  {id:'upper',name:'Full Upper Body',color:'work',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:60,
+   exercises:[
+    {id:uid(),name:'Renegade row',dur:45,sets:1,reps:'alternate sides',restBetweenSets:15},
+    {id:uid(),name:'Half-kneeling shoulder press',dur:45,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Bent-over reverse fly',dur:45,sets:1,reps:'light',restBetweenSets:15},
+    {id:uid(),name:'Dumbbell floor press',dur:45,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Bicep curl to overhead press',dur:45,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Tricep kickback',dur:45,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Pilates push-up',dur:45,sets:1,reps:'3 push-ups per walk-out',restBetweenSets:15}]},
+  {id:'chest',name:'Chest',color:'rest',prep:5,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
+   exercises:[
+    {id:uid(),name:'Dumbbell floor press',dur:40,sets:3,reps:'heavy, 3s lower',restBetweenSets:20},
+    {id:uid(),name:'Floor fly',dur:40,sets:3,reps:'slow',restBetweenSets:20},
+    {id:uid(),name:'Pilates push-up',dur:40,sets:3,reps:'',restBetweenSets:20},
+    {id:uid(),name:'Deficit push-up',dur:30,sets:2,reps:'hands on dumbbells',restBetweenSets:20},
+    {id:uid(),name:'Squeeze press',dur:40,sets:2,reps:'',restBetweenSets:20}]},
+  {id:'back',name:'Back',color:'round',prep:5,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
+   exercises:[
+    {id:uid(),name:'Single-arm row',dur:40,sets:2,reps:'right, then left',restBetweenSets:5},
+    {id:uid(),name:'Wide bent-over row',dur:40,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Dumbbell pullover',dur:40,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Bent-over reverse fly',dur:40,sets:1,reps:'light',restBetweenSets:15},
+    {id:uid(),name:'Weighted swimming',dur:40,sets:1,reps:'0.5 to 1 kg',restBetweenSets:15}]},
+  {id:'core',name:'Core & Abs Burn',color:'prep',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:45,
+   exercises:[
+    {id:uid(),name:'The Hundred',dur:100,sets:1,reps:'100 counts',restBetweenSets:15},
+    {id:uid(),name:'Weighted teaser',dur:40,sets:2,reps:'4s roll down',restBetweenSets:15},
+    {id:uid(),name:'Single-leg stretch to criss-cross',dur:45,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Plank with dumbbell drag-through',dur:40,sets:1,reps:'',restBetweenSets:15},
+    {id:uid(),name:'Side plank reach-under',dur:30,sets:2,reps:'left, then right',restBetweenSets:5},
+    {id:uid(),name:'Weighted dead bug',dur:45,sets:1,reps:'',restBetweenSets:15}]},
+  {id:'legs',name:'Legs',color:'work',prep:5,rounds:1,restBetweenExercises:30,restBetweenRounds:0,
+   exercises:[
+    {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'3s lower, pause',restBetweenSets:20},
+    {id:uid(),name:'Bulgarian split squat',dur:45,sets:4,reps:'alternate legs',restBetweenSets:20},
+    {id:uid(),name:'Romanian deadlift',dur:45,sets:3,reps:'heavy',restBetweenSets:20},
+    {id:uid(),name:'Single-leg glute bridge',dur:40,sets:2,reps:'left, then right',restBetweenSets:10},
+    {id:uid(),name:'Side-lying leg series',dur:45,sets:2,reps:'left, then right',restBetweenSets:10}]}
 ];
 
 let presets=store.get('cadence.presets',null);
 if(!presets){presets=SEED;store.set('cadence.presets',presets)}
+// Add seed presets introduced after a device first saved its list, without reviving ones the user deleted.
+{const seen=store.get('cadence.seedIds',['tabata','fullbody','strength']);const fresh=SEED.filter(p=>!seen.includes(p.id)&&!presets.some(x=>x.id===p.id));
+ if(fresh.length){presets=presets.concat(fresh);store.set('cadence.presets',presets)}store.set('cadence.seedIds',SEED.map(p=>p.id))}
 let history=store.get('cadence.history',[]);
 let settings=Object.assign({sound:true,voice:true,countdown:true,nick:'Bubba'},store.get('cadence.settings',{}));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -270,7 +324,8 @@ function summaryLine(w){const n=w.exercises.length;const e=n===1&&/^Work(out)?$/
 
 // ---------- audio ----------
 let actx=null;
-function ac(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(actx&&actx.state==='suspended')actx.resume();return actx}
+// iOS Safari pauses other apps' audio for web audio unless the session is 'ambient', which mixes with Spotify and similar (it does follow the silent switch).
+function ac(){if(!actx){try{if(navigator.audioSession)navigator.audioSession.type='ambient'}catch(e){}try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(actx&&actx.state==='suspended')actx.resume();return actx}
 function tone(freq,dur,when=0,vol=.25){const c=ac();if(!c||!settings.sound)return;const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0,c.currentTime+when);g.gain.linearRampToValueAtTime(vol,c.currentTime+when+.01);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+when+dur);o.connect(g).connect(c.destination);o.start(c.currentTime+when);o.stop(c.currentTime+when+dur+.02)}
 // Cute cartoon "beep beep": two quick chirps that bend up in pitch, softened with a triangle wave.
 function chirp(freq,dur,when=0,vol=.22){const c=ac();if(!c||!settings.sound)return;const t=c.currentTime+when,o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.setValueAtTime(freq*.85,t);o.frequency.exponentialRampToValueAtTime(freq*1.12,t+dur*.6);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.setValueAtTime(vol,t+dur*.55);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.02)}
@@ -449,6 +504,68 @@ function finishRun(completed){
   S.summary=entry;S.screen='summary';S.run=null;render();
 }
 
+// ---------- move tutorials ----------
+// Looping stick-figure demos shown during rests. Each move tweens between two poses.
+// Pose points, in order: head, shoulder, elbow, wrist, hip, knee, foot, then elbow2, wrist2, knee2, foot2 (the far side; copied from the near side when omitted).
+// front:1 draws a front view, with arms and legs spread from the shoulder and hip.
+const MOVES={
+  squat:{a:'80 25 80 34 84 47 88 36 80 58 80 75 80 92',b:'79 44 76 52 80 65 85 53 68 74 85 74 80 92',db:1,cue:'Sit hips back, chest tall, 3-second lower'},
+  split:{a:'76 23 76 32 77 46 77 58 76 56 84 73 90 92 77 46 77 58 70 73 62 92',b:'74 37 74 46 75 60 75 72 74 70 91 72 90 92 75 60 75 72 70 87 54 90',db:1,cue:'Front knee over ankle, drop straight down'},
+  hinge:{a:'80 25 80 34 80 47 80 59 80 58 80 75 80 92',b:'102 47 94 50 94 64 94 77 72 58 78 75 80 92',db:1,cue:'Soft knees, push hips back, long spine'},
+  row:{a:'102 47 94 50 94 64 94 77 72 58 78 75 80 92',b:'102 47 94 50 82 43 84 56 72 58 78 75 80 92',db:1,cue:'Flat back, pull your elbow to your hip'},
+  renegade:{a:'108 63 100 66 100 78 100 90 77 76 60 83 43 90',b:'108 63 100 66 90 57 94 69 77 76 60 83 43 90 100 78 100 90 60 83 43 90',db:1,cue:'Hips square, row without rotating'},
+  revfly:{a:'80 40 80 48 73 60 73 72 80 60 74 76 73 92 87 60 87 72 86 76 87 92',b:'80 40 80 48 61 53 48 55 80 60 74 76 73 92 99 53 112 55 86 76 87 92',front:1,db:1,cue:'Soft elbows, squeeze your shoulder blades'},
+  press:{a:'80 25 80 34 64 44 64 32 80 58 74 75 73 92 96 44 96 32 86 75 87 92',b:'80 25 80 34 70 21 70 8 80 58 74 75 73 92 90 21 90 8 86 75 87 92',front:1,db:1,cue:'Ribs down, press straight overhead'},
+  curl:{a:'80 25 80 34 83 47 85 60 80 58 80 75 80 92',b:'80 25 80 34 83 47 94 40 80 58 80 75 80 92',db:1,cue:'Elbows pinned, slow on the way down'},
+  floorpress:{a:'40 86 50 86 57 88 57 76 74 86 86 72 94 90',b:'40 86 50 86 52 74 52 61 74 86 86 72 94 90',db:1,cue:'Elbows at 45 degrees, press up and together'},
+  fly:{a:'40 86 50 86 52 74 52 61 74 86 86 72 94 90',b:'40 86 50 86 56 82 64 79 74 86 86 72 94 90',db:1,cue:'Soft elbows, open wide, hug back up'},
+  pushup:{a:'108 63 100 66 100 78 100 90 77 76 60 83 43 90',b:'108 77 100 80 90 84 100 90 77 84 60 87 43 91',cue:'Long line head to heels, chest to the floor'},
+  kickback:{a:'102 47 94 50 81 52 81 65 72 58 78 75 80 92',b:'102 47 94 50 81 52 68 55 72 58 78 75 80 92',db:1,cue:'Upper arm still, straighten fully back'},
+  pullover:{a:'40 86 50 86 52 74 52 61 74 86 86 72 94 90',b:'40 86 50 86 38 80 26 80 74 86 86 72 94 90',db:1,cue:'Ribs knit down, reach back only as far as you control'},
+  plank:{a:'108 63 100 66 100 78 100 90 77 76 60 83 43 90',b:'108 63 100 66 94 78 86 90 77 76 60 83 43 90 100 78 100 90 60 83 43 90',db:1,cue:'Hips level, push the floor away'},
+  sideplank:{a:'102 64 94 68 94 80 94 92 72 78 55 84 40 90 94 56 94 43 55 84 40 90',b:'100 66 92 70 94 80 94 92 70 80 55 85 40 90 86 76 76 82 55 85 40 90',db:1,cue:'Stack your hips, lift and thread under'},
+  hundred:{a:'44 72 51 78 63 75 75 73 70 88 86 78 102 68',b:'44 72 51 78 63 78 75 79 70 88 86 78 102 68',t:600,cue:'Pump the arms, inhale for 5, exhale for 5'},
+  teaser:{a:'56 58 60 66 72 60 84 54 70 88 84 74 98 60',b:'40 82 48 84 38 79 28 76 70 88 86 84 102 80',t:3200,db:1,cue:'Roll down one bone at a time, float back up'},
+  legstretch:{a:'44 74 52 80 58 76 62 71 70 88 62 72 76 76 58 76 62 71 86 82 102 76',b:'44 74 52 80 58 76 62 71 70 88 86 82 102 76 58 76 62 71 62 72 76 76',t:1400,cue:'Shoulders lifted, switch legs with control'},
+  deadbug:{a:'40 86 50 86 50 73 50 61 74 86 74 68 90 68 50 73 50 61 74 68 90 68',b:'40 86 50 86 40 80 29 84 74 86 74 68 90 68 50 73 50 61 90 80 106 86',db:1,cue:'Low back down, reach opposite arm and leg long'},
+  swim:{a:'105 82 96 85 108 82 120 78 72 88 56 87 40 82 108 86 120 89 56 89 40 91',b:'105 82 96 85 108 86 120 89 72 88 56 89 40 91 108 82 120 78 56 87 40 82',t:700,cue:'Lengthen first, then flutter arms and legs'},
+  bridge:{a:'40 86 50 86 62 90 72 90 74 88 86 72 96 90',b:'40 86 50 86 62 90 72 90 76 72 90 70 96 90',cue:'Press through your heels, ribs down at the top'},
+  sidelying:{a:'38 80 48 84 56 82 66 86 74 86 92 86 110 86',b:'38 80 48 84 56 82 66 86 74 86 92 86 110 86 56 82 66 86 91 78 108 70',cue:'Hips stacked, lift from the side of your hip'},
+  climber:{a:'108 63 100 66 100 78 100 90 77 76 92 80 86 90 100 78 100 90 60 83 43 90',b:'108 63 100 66 100 78 100 90 77 76 60 83 43 90 100 78 100 90 92 80 86 90',t:900,cue:'Shoulders over wrists, drive your knees in'},
+  swing:{a:'102 47 94 50 88 63 80 72 72 58 78 75 80 92',b:'80 25 80 34 93 36 106 38 80 58 80 75 80 92',t:1600,db:1,cue:'Snap your hips forward, let the arms float'},
+  march:{a:'80 25 80 34 76 46 74 58 80 58 96 62 94 79 84 46 92 38 80 75 80 92',b:'80 25 80 34 84 46 92 38 80 58 80 75 80 92 76 46 74 58 96 62 94 79',t:1000,cue:'Stay light and keep breathing'}
+};
+// First match wins, so specific names come before general ones.
+const MOVE_RULES=[[/side plank/,'sideplank'],[/side.?lying|clam/,'sidelying'],[/bridge|thrust/,'bridge'],[/hundred/,'hundred'],[/teaser/,'teaser'],[/dead ?bug/,'deadbug'],[/leg stretch|criss|bicycle/,'legstretch'],[/swim|superman/,'swim'],[/pullover/,'pullover'],[/renegade/,'renegade'],[/reverse fly|rear delt/,'revfly'],[/fly|flye/,'fly'],[/floor press|squeeze press|chest press|bench press/,'floorpress'],[/push.?up/,'pushup'],[/kickback|tricep/,'kickback'],[/press|overhead/,'press'],[/curl/,'curl'],[/\brow/,'row'],[/split squat|lunge/,'split'],[/deadlift|\brdl|hinge|good morning/,'hinge'],[/squat/,'squat'],[/swing/,'swing'],[/mountain|climber/,'climber'],[/plank|drag/,'plank']];
+// Plain numbers read as "12 reps"; descriptive labels like "left, then right" show as written.
+const repsTxt=r=>/^\d+$/.test(r)?`${r} reps`:r;
+function moveFor(name){const n=(name||'').toLowerCase();const r=MOVE_RULES.find(([re])=>re.test(n));return r?r[1]:'march'}
+const poseOf=str=>{const v=str.split(' ').map(Number);if(v.length===14)v.push(v[4],v[5],v[6],v[7],v[10],v[11],v[12],v[13]);return v};
+for(const k in MOVES){MOVES[k].A=poseOf(MOVES[k].a);MOVES[k].B=poseOf(MOVES[k].b)}
+function tutSvg(){const db='<rect class="db" width="9" height="5" rx="1.5"/>';return `<svg viewBox="14 2 116 96" aria-hidden="true"><line class="gnd" x1="14" y1="94" x2="130" y2="94"/><g class="far">${'<line class="lim"/>'.repeat(4)}${db}</g><g>${'<line class="lim"/>'.repeat(5)}<circle class="head" r="6"/>${db}</g></svg>`}
+function tutPose(svg,m,v,showDb){
+  const P=i=>[v[i*2],v[i*2+1]],[h,sh,e,w,hp,k,f,e2,w2,k2,f2]=[0,1,2,3,4,5,6,7,8,9,10].map(P);
+  const off=(pt,dx)=>m.front?[pt[0]+dx,pt[1]]:pt;
+  const near=[[off(sh,-7),e],[e,w],[sh,hp],[off(hp,-4),k],[k,f]],far=[[off(sh,7),e2],[e2,w2],[off(hp,4),k2],[k2,f2]];
+  const set=(el,[a,b])=>{el.setAttribute('x1',a[0]);el.setAttribute('y1',a[1]);el.setAttribute('x2',b[0]);el.setAttribute('y2',b[1])};
+  const [gFar,gNear]=svg.querySelectorAll('g');
+  gFar.querySelectorAll('line').forEach((el,i)=>set(el,far[i]));gNear.querySelectorAll('line').forEach((el,i)=>set(el,near[i]));
+  const hd=gNear.querySelector('circle');hd.setAttribute('cx',h[0]);hd.setAttribute('cy',h[1]);
+  [[gNear,w],[gFar,w2]].forEach(([g,pt])=>{const r=g.querySelector('rect');r.style.display=showDb?'':'none';r.setAttribute('x',pt[0]-4.5);r.setAttribute('y',pt[1]-2.5)});
+}
+let tutRAF=0;
+function tutStart(name){
+  const box=document.getElementById('tut');if(!box)return;
+  if(box.dataset.move===name&&tutRAF)return;
+  const m=MOVES[moveFor(name)],svg=box.querySelector('svg'),showDb=m.db&&!/\b(air|bodyweight)\b/i.test(name);
+  box.dataset.move=name;cancelAnimationFrame(tutRAF);
+  const T=m.t||2600,still=matchMedia('(prefers-reduced-motion: reduce)').matches,t0=performance.now();
+  const frame=now=>{if(!document.body.contains(svg)){tutRAF=0;return}
+    const ph=((now-t0)%T)/T,x=still?(ph<.5?0:1):(1-Math.cos(ph*2*Math.PI))/2;
+    tutPose(svg,m,m.A.map((a,i)=>a+(m.B[i]-a)*x),showDb);tutRAF=requestAnimationFrame(frame)};
+  tutRAF=requestAnimationFrame(frame);
+}
+function tutStop(){cancelAnimationFrame(tutRAF);tutRAF=0;const box=document.getElementById('tut');if(box)box.dataset.move=''}
 function renderRun(){
   const R=S.run,it=R.seq[R.idx];
   app.innerHTML=`
@@ -459,6 +576,7 @@ function renderRun(){
       <div class="center"><div class="time num" id="time"></div><div class="name" id="name"></div><div class="sub" id="sub"></div></div>
     </div></div>
     <div class="progress-dots" id="dots"></div>
+    <div class="tut" id="tut" hidden>${tutSvg()}<div class="tut-t"><span class="eyebrow" id="tut-e"></span><b id="tut-n"></b><small id="tut-c"></small></div></div>
     <div class="next" id="next"></div>
     <div class="controls"><button class="ctl" data-act="prev" aria-label="Previous interval">${I.prev}</button><button class="ctl big" data-act="pause" id="pausebtn" aria-label="Pause">${I.pause}</button><button class="ctl" data-act="skip" aria-label="Skip interval">${I.skip}</button></div>
     <div class="run-foot"><span>${esc(R.w.name||'Quick timer')}</span><button data-act="end">End workout</button></div>
@@ -476,9 +594,12 @@ function paintRun(full){
     const root=app.querySelector('.run');root.style.setProperty('--phase',PH[it.kind].c);root.style.setProperty('--phase-soft',PH[it.kind].s);
     document.getElementById('pill-t').textContent=R.paused?'Paused':PH[it.kind].n+(it.rounds>1?` · Round ${it.round}/${it.rounds}`:'');
     document.getElementById('name').textContent=it.kind==='work'?it.label:(it.kind==='prep'?'Get ready':(it.kind==='round'?'Round break':'Rest'));
-    const sub=[];if(it.kind==='work'){if(it.sets>1)sub.push(`Set ${it.set} of ${it.sets}`);if(it.reps)sub.push(`${it.reps} reps`)}
+    const sub=[];if(it.kind==='work'){if(it.sets>1)sub.push(`Set ${it.set} of ${it.sets}`);if(it.reps)sub.push(repsTxt(it.reps))}
     document.getElementById('sub').textContent=sub.join(' · ');
-    const nx=document.getElementById('next');nx.innerHTML=it.next?`Next <b>${esc(it.next.label)}</b>${it.next.reps?` · ${esc(it.next.reps)} reps`:''} · ${fmt(it.next.dur)}`:(it.kind==='work'?'Last interval':'');
+    // During rests, demo the next move with a looping figure and a form cue.
+    const showTut=it.kind!=='work'&&!!it.next,tut=document.getElementById('tut');tut.hidden=!showTut;
+    if(showTut){const n=it.next;document.getElementById('tut-e').textContent=['Up next',fmt(n.dur),n.reps?repsTxt(n.reps):''].filter(Boolean).join(' · ');document.getElementById('tut-n').textContent=n.label;document.getElementById('tut-c').textContent=MOVES[moveFor(n.label)].cue;tutStart(n.label)}else tutStop();
+    const nx=document.getElementById('next');nx.hidden=showTut;nx.innerHTML=it.next?`Next <b>${esc(it.next.label)}</b>${it.next.reps?` · ${esc(repsTxt(it.next.reps))}`:''} · ${fmt(it.next.dur)}`:(it.kind==='work'?'Last interval':'');
     document.getElementById('pausebtn').innerHTML=R.paused?I.play:I.pause;document.getElementById('pausebtn').setAttribute('aria-label',R.paused?'Resume':'Pause');
     const works=R.seq.map((x,i)=>({x,i})).filter(o=>o.x.kind==='work');
     document.getElementById('dots').innerHTML=works.length<=40?works.map(o=>`<i class="${o.i<=R.idx?'done':''}"></i>`).join(''):'';

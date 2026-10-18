@@ -43,6 +43,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-ui);fo
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 input,select{font:inherit;color:inherit}
+/* iOS Safari zooms into any field under 16px on focus, so every field stays at 16px or more. */
+input,select,textarea{font-size:max(16px,1em)}
 h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .num{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv01" 1}
 .eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -109,10 +111,10 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .stepper{display:flex;align-items:center;gap:2px;flex:none;width:clamp(112px,40%,148px);max-width:60%;background:var(--surface-2);border-radius:999px;padding:3px}
 .stepper button{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--fg)}
 .stepper button:hover{background:var(--surface)}
-.stepper .val{flex:1;width:0;min-width:0;text-align:center;font-weight:600;font-size:15px;background:transparent;border:0;padding:0}
-@media (max-width:340px){.row{gap:10px;padding:10px 10px 10px 14px}.stepper button{width:28px;height:28px;font-size:16px}.stepper .val{font-size:14px}}
+.stepper .val{flex:1;width:0;min-width:0;text-align:center;font-weight:600;font-size:16px;background:transparent;border:0;padding:0}
+@media (max-width:340px){.row{gap:10px;padding:10px 10px 10px 14px}.stepper button{width:28px;height:28px;font-size:16px}}
 .phase-swatch{width:4px;align-self:stretch;border-radius:2px;flex:none;margin-left:-4px}
-.text-field{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:10px;padding:11px 12px;font-size:15px}
+.text-field{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:10px;padding:11px 12px;font-size:16px}
 .text-field:focus{border-color:var(--accent);outline:0;background:var(--surface)}
 .chip-set{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:500;background:var(--surface)}
@@ -130,7 +132,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 .mini .ctrl{display:flex;align-items:center;justify-content:space-between;gap:4px}
 .mini .ctrl button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:16px}
 .mini .ctrl button:hover{background:var(--surface)}
-.mini .ctrl .val{font-weight:600;font-size:14px;text-align:center;background:transparent;border:0;width:100%;min-width:0;padding:0}
+.mini .ctrl .val{font-weight:600;font-size:16px;text-align:center;background:transparent;border:0;width:100%;min-width:0;padding:0}
 .ex-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .ex-foot small{color:var(--muted)}
 .ex-foot .tools{display:flex;gap:2px}
@@ -217,15 +219,15 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 
 // ---------- seed presets ----------
 const SEED=[
-  {id:'tabata',name:'Classic Tabata',color:'work',prep:10,rounds:1,restBetweenExercises:0,restBetweenRounds:0,
+  {id:'tabata',name:'Classic Tabata',color:'work',prep:5,rounds:1,restBetweenExercises:0,restBetweenRounds:0,
    exercises:[{id:uid(),name:'Workout',dur:20,sets:8,reps:'',restBetweenSets:10}]},
-  {id:'fullbody',name:'Full Body Circuit',color:'round',prep:10,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
+  {id:'fullbody',name:'Full Body Circuit',color:'round',prep:5,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
     {id:uid(),name:'Push-ups',dur:40,sets:1,reps:'12',restBetweenSets:15},
     {id:uid(),name:'Air squats',dur:40,sets:1,reps:'15',restBetweenSets:15},
     {id:uid(),name:'Plank',dur:45,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Mountain climbers',dur:30,sets:1,reps:'',restBetweenSets:15}]},
-  {id:'strength',name:'Kettlebell Strength',color:'rest',prep:15,rounds:1,restBetweenExercises:60,restBetweenRounds:0,
+  {id:'strength',name:'Kettlebell Strength',color:'rest',prep:5,rounds:1,restBetweenExercises:60,restBetweenRounds:0,
    exercises:[
     {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'10',restBetweenSets:45},
     {id:uid(),name:'Single-arm row',dur:40,sets:3,reps:'8 each side',restBetweenSets:30},
@@ -337,8 +339,8 @@ function renderHome(){
 }
 
 function newDraft(mode){
-  if(mode==='quick')return {id:uid(),name:'Quick timer',color:'work',prep:10,rounds:1,restBetweenExercises:0,restBetweenRounds:60,exercises:[{id:uid(),name:'Workout',dur:30,sets:8,reps:'',restBetweenSets:15}]};
-  return {id:uid(),name:'',color:'round',prep:10,rounds:2,restBetweenExercises:15,restBetweenRounds:60,exercises:[{id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15}]};
+  if(mode==='quick')return {id:uid(),name:'Quick timer',color:'work',prep:5,rounds:1,restBetweenExercises:0,restBetweenRounds:60,exercises:[{id:uid(),name:'Workout',dur:30,sets:8,reps:'',restBetweenSets:15}]};
+  return {id:uid(),name:'',color:'round',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:60,exercises:[{id:uid(),name:'',dur:40,sets:1,reps:'',restBetweenSets:15}]};
 }
 
 function renderQuick(){

@@ -231,19 +231,12 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 
 // ---------- seed presets ----------
 const SEED=[
-  {id:'tabata',name:'Classic Tabata',color:'work',prep:5,rounds:1,restBetweenExercises:0,restBetweenRounds:0,
-   exercises:[{id:uid(),name:'Workout',dur:20,sets:8,reps:'',restBetweenSets:10}]},
   {id:'fullbody',name:'Full Body Circuit',color:'round',prep:5,rounds:3,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
     {id:uid(),name:'Push-ups',dur:40,sets:1,reps:'12',restBetweenSets:15},
     {id:uid(),name:'Air squats',dur:40,sets:1,reps:'15',restBetweenSets:15},
     {id:uid(),name:'Plank',dur:45,sets:1,reps:'',restBetweenSets:15},
     {id:uid(),name:'Mountain climbers',dur:30,sets:1,reps:'',restBetweenSets:15}]},
-  {id:'strength',name:'Kettlebell Strength',color:'rest',prep:5,rounds:1,restBetweenExercises:60,restBetweenRounds:0,
-   exercises:[
-    {id:uid(),name:'Goblet squat',dur:45,sets:3,reps:'10',restBetweenSets:45},
-    {id:uid(),name:'Single-arm row',dur:40,sets:3,reps:'8 each side',restBetweenSets:30},
-    {id:uid(),name:'KB swing',dur:30,sets:4,reps:'15',restBetweenSets:30}]},
   // Pilates-strength set: dumbbell work with slow lowering and weighted Pilates moves.
   {id:'upper',name:'Full Upper Body',color:'work',prep:5,rounds:2,restBetweenExercises:15,restBetweenRounds:60,
    exercises:[
@@ -287,9 +280,12 @@ const SEED=[
 
 let presets=store.get('cadence.presets',null);
 if(!presets){presets=SEED;store.set('cadence.presets',presets)}
+// Retired seed presets are removed once from devices that still have them.
+const RETIRED=['tabata','strength'];
+if(!store.get('cadence.retired',false)){presets=presets.filter(p=>!RETIRED.includes(p.id));store.set('cadence.presets',presets);store.set('cadence.retired',true)}
 // Add seed presets introduced after a device first saved its list, without reviving ones the user deleted.
 {const seen=store.get('cadence.seedIds',['tabata','fullbody','strength']);const fresh=SEED.filter(p=>!seen.includes(p.id)&&!presets.some(x=>x.id===p.id));
- if(fresh.length){presets=presets.concat(fresh);store.set('cadence.presets',presets)}store.set('cadence.seedIds',SEED.map(p=>p.id))}
+ if(fresh.length){presets=presets.concat(fresh);store.set('cadence.presets',presets)}store.set('cadence.seedIds',SEED.map(p=>p.id).concat(RETIRED))}
 let history=store.get('cadence.history',[]);
 let settings=Object.assign({sound:true,voice:true,countdown:true,nick:'Bubba'},store.get('cadence.settings',{}));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -667,7 +663,7 @@ app.addEventListener('click',e=>{
     if(a==='down'&&i<arr.length-1)[arr[i+1],arr[i]]=[arr[i],arr[i+1]];
     render();return}
   const tpl=e.target.closest('[data-tpl]');
-  if(tpl){const w=S.draft,x=w.exercises[0];const T={tabata:[10,20,10,8,1,0],emom:[10,45,15,10,1,0],'3030':[10,30,30,10,1,0],'4515':[10,45,15,6,3,60]}[tpl.dataset.tpl];[w.prep,x.dur,x.restBetweenSets,x.sets,w.rounds,w.restBetweenRounds]=T;render();return}
+  if(tpl){const w=S.draft,x=w.exercises[0];const T={tabata:[5,20,10,8,1,0],emom:[5,45,15,10,1,0],'3030':[5,30,30,10,1,0],'4515':[5,45,15,6,3,60]}[tpl.dataset.tpl];[w.prep,x.dur,x.restBetweenSets,x.sets,w.rounds,w.restBetweenRounds]=T;render();return}
   const col=e.target.closest('[data-color]');if(col){S.draft.color=col.dataset.color;render();return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   switch(a){
